@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/utils/validators.dart';
@@ -129,87 +128,69 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildBackground() {
-    return Stack(
-      children: [
-        Positioned(
-          top: -100,
-          left: -100,
-          child: Container(
-            width: 300,
-            height: 300,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  AppColors.accent.withOpacity(0.12),
-                  AppColors.accent.withOpacity(0.0),
-                ],
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 100,
-          right: -80,
-          child: Container(
-            width: 250,
-            height: 250,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  AppColors.secondary.withOpacity(0.1),
-                  AppColors.secondary.withOpacity(0.0),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.background,
+      ),
     );
   }
 
   Widget _buildBackButton() {
-    return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [AppColors.softShadow],
-          ),
-          child: IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-            color: AppColors.textPrimary,
-          ),
-        )
-        .animate()
-        .fadeIn(duration: 300.ms)
-        .slideX(begin: -0.2, end: 0, curve: Curves.easeOutCubic);
+    return IconButton(
+      onPressed: () => Navigator.pop(context),
+      style: IconButton.styleFrom(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      icon: const Icon(
+        Icons.arrow_back_ios_new_rounded,
+        size: 18,
+        color: AppColors.textPrimary,
+      ),
+    );
   }
 
   Widget _buildHeader() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-              "Create\nAccount ✨",
-              style: AppTextStyles.display.copyWith(fontSize: 36, height: 1.2),
-            )
-            .animate()
-            .fadeIn(delay: 100.ms, duration: 500.ms)
-            .slideY(begin: 0.2, end: 0, curve: Curves.easeOutCubic),
-
-        const SizedBox(height: 12),
-
-        Text(
-              "Join the NUcleus research community",
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: AppColors.textSecondary,
+        // NU Logo
+        Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: Text(
+              "NU",
+              style: TextStyle(
+                color: AppColors.accent,
+                fontWeight: FontWeight.w900,
+                fontSize: 18,
               ),
-            )
-            .animate()
-            .fadeIn(delay: 200.ms, duration: 500.ms)
-            .slideY(begin: 0.2, end: 0, curve: Curves.easeOutCubic),
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          "Create Account",
+          style: AppTextStyles.display.copyWith(
+            fontSize: 32,
+            height: 1.2,
+            color: AppColors.primary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          "Join the NUcleus research community",
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
       ],
     );
   }
@@ -219,111 +200,123 @@ class _RegisterScreenState extends State<RegisterScreen> {
       children: [
         // Full Name
         AnimatedInputField(
-              controller: _nameController,
-              focusNode: _nameFocus,
-              label: "Full Name",
-              hint: "Juan Dela Cruz",
-              prefixIcon: Icons.person_outline_rounded,
-              validator: Validators.validateName,
-              textInputAction: TextInputAction.next,
-              onFieldSubmitted: (_) => _emailFocus.requestFocus(),
-            )
-            .animate()
-            .fadeIn(delay: 300.ms, duration: 500.ms)
-            .slideY(begin: 0.2, end: 0, curve: Curves.easeOutCubic),
+          controller: _nameController,
+          focusNode: _nameFocus,
+          label: "Full Name",
+          hint: "Juan Dela Cruz",
+          prefixIcon: Icons.person_outline_rounded,
+          validator: Validators.validateName,
+          textInputAction: TextInputAction.next,
+          onFieldSubmitted: (_) => _emailFocus.requestFocus(),
+        ),
 
         const SizedBox(height: 18),
 
         // Email
         AnimatedInputField(
-              controller: _emailController,
-              focusNode: _emailFocus,
-              label: "Email Address",
-              hint: "student@national-u.edu.ph",
-              prefixIcon: Icons.email_outlined,
-              keyboardType: TextInputType.emailAddress,
-              validator: Validators.validateEmail,
-              textInputAction: TextInputAction.next,
-              onFieldSubmitted: (_) => _passwordFocus.requestFocus(),
-            )
-            .animate()
-            .fadeIn(delay: 400.ms, duration: 500.ms)
-            .slideY(begin: 0.2, end: 0, curve: Curves.easeOutCubic),
+          controller: _emailController,
+          focusNode: _emailFocus,
+          label: "Email Address",
+          hint: "student@national-u.edu.ph",
+          prefixIcon: Icons.email_outlined,
+          keyboardType: TextInputType.emailAddress,
+          validator: Validators.validateEmail,
+          textInputAction: TextInputAction.next,
+          onFieldSubmitted: (_) => _passwordFocus.requestFocus(),
+        ),
 
         const SizedBox(height: 18),
 
         // Password
         AnimatedInputField(
-              controller: _passwordController,
-              focusNode: _passwordFocus,
-              label: "Password",
-              hint: "Create a strong password",
-              prefixIcon: Icons.lock_outline_rounded,
-              obscureText: _obscurePassword,
-              validator: Validators.validatePassword,
-              textInputAction: TextInputAction.next,
-              onFieldSubmitted: (_) => _confirmFocus.requestFocus(),
-              suffixIcon: IconButton(
-                onPressed: () =>
-                    setState(() => _obscurePassword = !_obscurePassword),
-                icon: Icon(
-                  _obscurePassword
-                      ? Icons.visibility_off_rounded
-                      : Icons.visibility_rounded,
-                  color: AppColors.textLight,
-                  size: 22,
-                ),
-              ),
-            )
-            .animate()
-            .fadeIn(delay: 500.ms, duration: 500.ms)
-            .slideY(begin: 0.2, end: 0, curve: Curves.easeOutCubic),
+          controller: _passwordController,
+          focusNode: _passwordFocus,
+          label: "Password",
+          hint: "Create a strong password",
+          prefixIcon: Icons.lock_outline_rounded,
+          obscureText: _obscurePassword,
+          validator: Validators.validatePassword,
+          textInputAction: TextInputAction.next,
+          onFieldSubmitted: (_) => _confirmFocus.requestFocus(),
+          suffixIcon: IconButton(
+            onPressed: () =>
+                setState(() => _obscurePassword = !_obscurePassword),
+            icon: Icon(
+              _obscurePassword
+                  ? Icons.visibility_off_rounded
+                  : Icons.visibility_rounded,
+              color: AppColors.textLight,
+              size: 22,
+            ),
+          ),
+        ),
 
         const SizedBox(height: 18),
 
         // Confirm Password
         AnimatedInputField(
-              controller: _confirmController,
-              focusNode: _confirmFocus,
-              label: "Confirm Password",
-              hint: "Re-enter your password",
-              prefixIcon: Icons.lock_rounded,
-              obscureText: _obscureConfirm,
-              textInputAction: TextInputAction.done,
-              onFieldSubmitted: (_) => _handleRegister(),
-              validator: (v) => Validators.validateConfirmPassword(
-                v,
-                _passwordController.text,
-              ),
-              suffixIcon: IconButton(
-                onPressed: () =>
-                    setState(() => _obscureConfirm = !_obscureConfirm),
-                icon: Icon(
-                  _obscureConfirm
-                      ? Icons.visibility_off_rounded
-                      : Icons.visibility_rounded,
-                  color: AppColors.textLight,
-                  size: 22,
-                ),
-              ),
-            )
-            .animate()
-            .fadeIn(delay: 600.ms, duration: 500.ms)
-            .slideY(begin: 0.2, end: 0, curve: Curves.easeOutCubic),
+          controller: _confirmController,
+          focusNode: _confirmFocus,
+          label: "Confirm Password",
+          hint: "Re-enter your password",
+          prefixIcon: Icons.lock_rounded,
+          obscureText: _obscureConfirm,
+          textInputAction: TextInputAction.done,
+          onFieldSubmitted: (_) => _handleRegister(),
+          validator: (v) => Validators.validateConfirmPassword(
+            v,
+            _passwordController.text,
+          ),
+          suffixIcon: IconButton(
+            onPressed: () =>
+                setState(() => _obscureConfirm = !_obscureConfirm),
+            icon: Icon(
+              _obscureConfirm
+                  ? Icons.visibility_off_rounded
+                  : Icons.visibility_rounded,
+              color: AppColors.textLight,
+              size: 22,
+            ),
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildSubmitButton() {
-    return AnimatedPrimaryButton(
-          text: "Create Account",
-          icon: Icons.person_add_rounded,
-          isLoading: _isLoading,
-          onPressed: _handleRegister,
-        )
-        .animate()
-        .fadeIn(delay: 700.ms, duration: 500.ms)
-        .slideY(begin: 0.2, end: 0, curve: Curves.easeOutCubic);
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _handleRegister,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.accent,
+          foregroundColor: AppColors.primary,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          disabledBackgroundColor: AppColors.disabled,
+        ),
+        child: _isLoading
+            ? SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: AppColors.primary,
+                ),
+              )
+            : Text(
+                "CREATE ACCOUNT",
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                  letterSpacing: 1,
+                ),
+              ),
+      ),
+    );
   }
 
   Widget _buildLoginLink() {
@@ -341,12 +334,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Text(
             "Sign In",
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.primary,
+              color: AppColors.accent,
               fontWeight: FontWeight.w700,
             ),
           ),
         ),
       ],
-    ).animate().fadeIn(delay: 800.ms, duration: 400.ms);
+    );
   }
 }

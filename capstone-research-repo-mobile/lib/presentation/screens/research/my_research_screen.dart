@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/constants/app_constants.dart';
@@ -56,7 +54,7 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
   }
 
   Widget _buildLoadingState() {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,10 +76,10 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
           ),
           const SizedBox(height: 28),
           ...List.generate(
-            4,
+            3,
             (index) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: const ShimmerBox(height: 100, borderRadius: 16),
+              child: const ShimmerBox(height: 80, borderRadius: 12),
             ),
           ),
         ],
@@ -93,22 +91,14 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("My Research", style: AppTextStyles.heading2)
-            .animate()
-            .fadeIn(duration: 400.ms)
-            .slideX(begin: -0.1, end: 0, curve: Curves.easeOutCubic),
-
-        const SizedBox(height: 6),
-
+        Text("My Research", style: AppTextStyles.heading2),
+        const SizedBox(height: 4),
         Text(
-              "Track your submissions and their progress",
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            )
-            .animate()
-            .fadeIn(delay: 100.ms, duration: 400.ms)
-            .slideX(begin: -0.1, end: 0, curve: Curves.easeOutCubic),
+          "Track your submissions and progress",
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
       ],
     );
   }
@@ -129,38 +119,35 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
         .length;
 
     return Row(
-          children: [
-            Expanded(
-              child: _StatCard(
-                icon: Icons.check_circle_rounded,
-                label: "Published",
-                count: published,
-                color: AppColors.success,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _StatCard(
-                icon: Icons.schedule_rounded,
-                label: "Pending",
-                count: pending,
-                color: AppColors.warning,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _StatCard(
-                icon: Icons.cancel_rounded,
-                label: "Rejected",
-                count: rejected,
-                color: AppColors.error,
-              ),
-            ),
-          ],
-        )
-        .animate()
-        .fadeIn(delay: 200.ms, duration: 500.ms)
-        .slideY(begin: 0.2, end: 0, curve: Curves.easeOutCubic);
+      children: [
+        Expanded(
+          child: _StatCard(
+            icon: Icons.check_circle_rounded,
+            label: "Published",
+            count: published,
+            color: AppColors.success,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _StatCard(
+            icon: Icons.schedule_rounded,
+            label: "Pending",
+            count: pending,
+            color: AppColors.warning,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _StatCard(
+            icon: Icons.cancel_rounded,
+            label: "Rejected",
+            count: rejected,
+            color: AppColors.error,
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildEmptyState() {
@@ -169,54 +156,22 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
         padding: const EdgeInsets.only(top: 60),
         child: Column(
           children: [
-            Container(
-                  padding: const EdgeInsets.all(28),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppColors.accent.withOpacity(0.1),
-                        AppColors.secondary.withOpacity(0.1),
-                      ],
-                    ),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.description_outlined,
-                    size: 56,
-                    color: AppColors.accent.withOpacity(0.6),
-                  ),
-                )
-                .animate()
-                .fadeIn(duration: 600.ms)
-                .scale(begin: const Offset(0.5, 0.5), curve: Curves.elasticOut),
-
-            const SizedBox(height: 24),
-
-            Text(
-                  "No Submissions Yet",
-                  style: AppTextStyles.heading3.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
-                )
-                .animate()
-                .fadeIn(delay: 200.ms, duration: 500.ms)
-                .slideY(begin: 0.2, end: 0),
-
+            Icon(
+              Icons.description_outlined,
+              size: 48,
+              color: AppColors.textLight,
+            ),
+            const SizedBox(height: 16),
+            Text("No Submissions Yet", style: AppTextStyles.heading4),
             const SizedBox(height: 8),
-
             Text(
-                  "Start sharing your research\nwith the community!",
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
-                    height: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
-                )
-                .animate()
-                .fadeIn(delay: 300.ms, duration: 500.ms)
-                .slideY(begin: 0.2, end: 0),
+              "Start sharing your research\nwith the community!",
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),
@@ -224,38 +179,22 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
   }
 
   Widget _buildPapersList(List<ResearchModel> papers) {
-    return AnimationLimiter(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "All Submissions",
-            style: AppTextStyles.heading4.copyWith(
-              color: AppColors.textPrimary,
-            ),
-          ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
-
-          const SizedBox(height: 16),
-
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: papers.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final paper = papers[index];
-              return AnimationConfiguration.staggeredList(
-                position: index,
-                duration: const Duration(milliseconds: 500),
-                child: SlideAnimation(
-                  horizontalOffset: 50.0,
-                  child: FadeInAnimation(child: _PaperStatusCard(paper: paper)),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("All Submissions", style: AppTextStyles.labelMedium),
+        const SizedBox(height: 12),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: papers.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (context, index) {
+            final paper = papers[index];
+            return _PaperStatusCard(paper: paper);
+          },
+        ),
+      ],
     );
   }
 }
@@ -276,27 +215,26 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [AppColors.softShadow],
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: color, size: 20),
+            child: Icon(icon, color: color, size: 18),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Text(
             count.toString(),
-            style: AppTextStyles.heading3.copyWith(
-              color: AppColors.textPrimary,
+            style: AppTextStyles.heading4.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -313,21 +251,14 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _PaperStatusCard extends StatefulWidget {
+class _PaperStatusCard extends StatelessWidget {
   final ResearchModel paper;
 
   const _PaperStatusCard({required this.paper});
 
   @override
-  State<_PaperStatusCard> createState() => _PaperStatusCardState();
-}
-
-class _PaperStatusCardState extends State<_PaperStatusCard> {
-  bool _isPressed = false;
-
-  @override
   Widget build(BuildContext context) {
-    final status = widget.paper.status;
+    final status = paper.status;
     Color statusColor;
     IconData statusIcon;
     String statusLabel;
@@ -346,103 +277,64 @@ class _PaperStatusCardState extends State<_PaperStatusCard> {
       statusLabel = "Pending Review";
     }
 
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => setState(() => _isPressed = false),
-      onTapCancel: () => setState(() => _isPressed = false),
-      onTap: () {
-        // TODO: Navigate to detail
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        transform: Matrix4.identity()..scale(_isPressed ? 0.98 : 1.0),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(_isPressed ? 0.06 : 0.04),
-              blurRadius: _isPressed ? 8 : 16,
-              offset: Offset(0, _isPressed ? 2 : 6),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            height: 44,
+            width: 44,
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Status Icon Container
-            Container(
-              height: 56,
-              width: 56,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    statusColor.withOpacity(0.15),
-                    statusColor.withOpacity(0.05),
-                  ],
+            child: Icon(statusIcon, color: statusColor, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  paper.title,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(statusIcon, color: statusColor, size: 28),
-            ),
-
-            const SizedBox(width: 14),
-
-            // Content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.paper.title,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      fontWeight: FontWeight.w700,
-                      height: 1.3,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
                   ),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      statusLabel,
-                      style: AppTextStyles.caption.copyWith(
-                        color: statusColor,
-                        fontWeight: FontWeight.w600,
-                      ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    statusLabel,
+                    style: AppTextStyles.caption.copyWith(
+                      color: statusColor,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-
-            const SizedBox(width: 8),
-
-            // Arrow
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 14,
-                color: AppColors.textLight,
-              ),
-            ),
-          ],
-        ),
+          ),
+          Icon(
+            Icons.chevron_right_rounded,
+            size: 20,
+            color: AppColors.textLight,
+          ),
+        ],
       ),
     );
   }

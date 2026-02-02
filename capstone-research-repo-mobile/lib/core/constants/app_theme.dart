@@ -20,8 +20,8 @@ ThemeData buildAppTheme() {
 
     // AppBar Theme
     appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.white,
-      elevation: 1,
+      backgroundColor: AppColors.surface,
+      elevation: 0,
       iconTheme: IconThemeData(color: AppColors.textPrimary),
       titleTextStyle: TextStyle(
         fontSize: 18,

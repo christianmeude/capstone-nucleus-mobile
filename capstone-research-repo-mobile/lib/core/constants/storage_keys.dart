@@ -10,6 +10,7 @@ class StorageKeys {
   // App Settings
   static const String themeMode = 'theme_mode';
   static const String isFirstLaunch = 'is_first_launch';
+  static const String hasSeenOnboarding = 'has_seen_onboarding';
   static const String lastSyncTime = 'last_sync_time';
 
   // Cache Keys

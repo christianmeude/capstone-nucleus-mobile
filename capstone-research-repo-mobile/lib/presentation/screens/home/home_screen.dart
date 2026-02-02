@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../data/repositories/auth_repository.dart';
@@ -7,6 +6,8 @@ import '../../../data/models/user_model.dart';
 import '../../../routes/app_routes.dart';
 import '../research/browse_research_screen.dart';
 import '../research/my_research_screen.dart';
+import '../research/search_screen.dart';
+import '../research/analytics_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -146,68 +147,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   List<Widget> get _pages => [
     const BrowseResearchScreen(),
-    _buildSearchPlaceholder(),
+    const SearchScreen(),
     const MyResearchScreen(),
-    _buildAnalyticsPlaceholder(),
+    const AnalyticsScreen(),
   ];
-
-  Widget _buildSearchPlaceholder() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.search_rounded,
-              size: 48,
-              color: AppColors.primary.withOpacity(0.5),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            "Search Coming Soon",
-            style: AppTextStyles.heading3.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAnalyticsPlaceholder() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppColors.accent.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.bar_chart_rounded,
-              size: 48,
-              color: AppColors.accent.withOpacity(0.5),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            "Analytics Coming Soon",
-            style: AppTextStyles.heading3.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -237,213 +180,129 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildAppBar() {
     return Container(
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 12,
+        top: MediaQuery.of(context).padding.top + 8,
         left: 20,
         right: 20,
-        bottom: 16,
+        bottom: 12,
       ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      color: AppColors.primary,
       child: Row(
         children: [
-          // Avatar
-          GestureDetector(
-            onTap: () {},
-            child:
-                Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        gradient: AppColors.primaryGradient,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withOpacity(0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Text(
-                                _userInitials,
-                                style: AppTextStyles.heading4.copyWith(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                ),
-                              ),
-                      ),
-                    )
-                    .animate()
-                    .fadeIn(duration: 400.ms)
-                    .scale(
-                      begin: const Offset(0.8, 0.8),
-                      curve: Curves.easeOutBack,
-                    ),
+          // NU Logo
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(
+              child: Text(
+                "NU",
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 14,
+                ),
+              ),
+            ),
           ),
 
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
 
           // Greeting
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                      _greeting,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    )
-                    .animate()
-                    .fadeIn(delay: 100.ms, duration: 400.ms)
-                    .slideX(begin: -0.1, end: 0),
-                const SizedBox(height: 2),
+                  _greeting,
+                  style: AppTextStyles.caption.copyWith(
+                    color: Colors.white70,
+                  ),
+                ),
                 Text(
-                      _isLoading
-                          ? "..."
-                          : _currentUser?.fullName.split(' ')[0] ?? 'User',
-                      style: AppTextStyles.heading4.copyWith(fontSize: 20),
-                    )
-                    .animate()
-                    .fadeIn(delay: 200.ms, duration: 400.ms)
-                    .slideX(begin: -0.1, end: 0),
+                  _isLoading
+                      ? "..."
+                      : _currentUser?.fullName.split(' ')[0] ?? 'User',
+                  style: AppTextStyles.heading4.copyWith(
+                    fontSize: 18,
+                    color: Colors.white,
+                  ),
+                ),
               ],
             ),
           ),
 
-          // Notification & Logout
-          Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceLight,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: IconButton(
-                  onPressed: () {},
-                  icon: Stack(
-                    children: [
-                      const Icon(
-                        Icons.notifications_outlined,
-                        color: AppColors.textSecondary,
-                      ),
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: AppColors.error,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-              .animate()
-              .fadeIn(delay: 300.ms, duration: 400.ms)
-              .scale(begin: const Offset(0.8, 0.8)),
+          // Notification
+          IconButton(
+            onPressed: () {},
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.white.withOpacity(0.15),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            icon: Badge(
+              smallSize: 8,
+              backgroundColor: AppColors.accent,
+              child: const Icon(
+                Icons.notifications_outlined,
+                color: Colors.white,
+                size: 22,
+              ),
+            ),
+          ),
 
           const SizedBox(width: 8),
 
-          Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceLight,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: IconButton(
-                  onPressed: _handleLogout,
-                  icon: const Icon(
-                    Icons.logout_rounded,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              )
-              .animate()
-              .fadeIn(delay: 400.ms, duration: 400.ms)
-              .scale(begin: const Offset(0.8, 0.8)),
+          // Logout
+          IconButton(
+            onPressed: _handleLogout,
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.white.withOpacity(0.15),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            icon: const Icon(
+              Icons.logout_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildFAB() {
-    return Container(
-          decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.4),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () =>
-                  Navigator.pushNamed(context, AppRoutes.submitResearch),
-              borderRadius: BorderRadius.circular(16),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 14,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.add_rounded,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      "Submit",
-                      style: AppTextStyles.button.copyWith(color: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        )
-        .animate()
-        .fadeIn(delay: 500.ms, duration: 400.ms)
-        .slideY(begin: 0.5, end: 0, curve: Curves.easeOutCubic)
-        .scale(begin: const Offset(0.8, 0.8));
+    return FloatingActionButton.extended(
+      onPressed: () => Navigator.pushNamed(context, AppRoutes.submitResearch),
+      backgroundColor: AppColors.accent,
+      foregroundColor: AppColors.primary,
+      elevation: 4,
+      icon: const Icon(Icons.add_rounded, size: 20),
+      label: Text(
+        "SUBMIT",
+        style: TextStyle(
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
   }
 
   Widget _buildBottomNav() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
@@ -455,7 +314,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             children: [
               _buildNavItem(0, Icons.grid_view_rounded, "Browse"),
               _buildNavItem(1, Icons.search_rounded, "Search"),
-              _buildNavItem(2, Icons.folder_shared_rounded, "My Papers"),
+              _buildNavItem(2, Icons.folder_rounded, "My Papers"),
               _buildNavItem(3, Icons.bar_chart_rounded, "Analytics"),
             ],
           ),
@@ -469,20 +328,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOutCubic,
-        padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 16 : 12,
-          vertical: 10,
-        ),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary.withOpacity(0.1)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(14),
+          color: isSelected ? AppColors.accent.withOpacity(0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
         ),
-        child: Row(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
@@ -490,16 +343,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               color: isSelected ? AppColors.primary : AppColors.textLight,
               size: 24,
             ),
-            if (isSelected) ...[
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: AppTextStyles.label.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: AppTextStyles.caption.copyWith(
+                color: isSelected ? AppColors.primary : AppColors.textLight,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                fontSize: 11,
               ),
-            ],
+            ),
           ],
         ),
       ),
