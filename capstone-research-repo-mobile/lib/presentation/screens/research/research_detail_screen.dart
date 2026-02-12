@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../data/models/research_model.dart';
@@ -9,151 +10,218 @@ class ResearchDetailScreen extends StatelessWidget {
 
   const ResearchDetailScreen({super.key, required this.paper});
 
+  void _openPdfViewer(BuildContext context) {
+    if (paper.fileUrl == null) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            PdfViewerScreen(pdfUrl: paper.fileUrl!, title: paper.title),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
-          // App Bar
-          _buildAppBar(context),
+          // Custom App Bar
+          _buildSliverAppBar(context),
 
           // Content
           SliverToBoxAdapter(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(),
-                _buildMetadata(),
-                _buildAbstract(),
+                // Header Card
+                _buildHeaderCard(context),
+
+                // PDF Viewer Button
+                if (paper.fileUrl != null) _buildPdfViewerButton(context),
+
+                // Stats Section
+                _buildStatsSection(context),
+
+                // Keywords
                 if (paper.keywords != null && paper.keywords!.isNotEmpty)
-                  _buildKeywords(),
-                _buildStats(),
+                  _buildKeywordsSection(context),
+
+                // Abstract
+                _buildAbstractSection(context),
+
+                // Metadata
+                _buildMetadataSection(context),
+
                 const SizedBox(height: 100),
               ],
             ),
           ),
         ],
       ),
-      bottomNavigationBar: _buildBottomBar(context),
+      // Floating Download Button
+      floatingActionButton: paper.fileUrl != null
+          ? FloatingActionButton.extended(
+              onPressed: () => _openPdfViewer(context),
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 4,
+              icon: const Icon(Icons.picture_as_pdf_rounded),
+              label: const Text(
+                'View PDF',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
-  Widget _buildAppBar(BuildContext context) {
+  Widget _buildSliverAppBar(BuildContext context) {
     return SliverAppBar(
-      expandedHeight: 160,
+      expandedHeight: 120,
       pinned: true,
       backgroundColor: AppColors.primary,
+      foregroundColor: Colors.white,
       leading: IconButton(
+        icon: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Icon(Icons.arrow_back_rounded, size: 20),
+        ),
         onPressed: () => Navigator.pop(context),
-        icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
       ),
+      actions: [
+        IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.share_rounded, size: 20),
+          ),
+          onPressed: () {},
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.bookmark_outline_rounded, size: 20),
+          ),
+          onPressed: () {},
+        ),
+        const SizedBox(width: 12),
+      ],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
+              colors: [AppColors.primary, AppColors.primaryLight],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                AppColors.primary,
-                AppColors.primaryLight,
-              ],
             ),
           ),
-          child: Stack(
-            children: [
-              Positioned(
-                right: -30,
-                bottom: -30,
-                child: Icon(
-                  Icons.description_rounded,
-                  size: 180,
-                  color: Colors.white.withOpacity(0.1),
-                ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      _buildStatusBadge(),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          paper.category,
+                          style: AppTextStyles.caption.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              Positioned(
-                left: 20,
-                bottom: 20,
-                child: Icon(
-                  Icons.description_rounded,
-                  size: 48,
-                  color: AppColors.accent,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
-      actions: [
-        IconButton(
-          onPressed: () {
-            // TODO: Share functionality
-          },
-          icon: const Icon(Icons.share_rounded, color: Colors.white),
-        ),
-        const SizedBox(width: 8),
-      ],
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeaderCard(BuildContext context) {
     return Container(
+      margin: const EdgeInsets.all(20),
       padding: const EdgeInsets.all(20),
-      color: AppColors.surface,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Category Badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.accent.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              paper.category,
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
           // Title
           Text(
             paper.title,
-            style: AppTextStyles.heading2.copyWith(
+            style: AppTextStyles.heading3.copyWith(
               color: AppColors.primary,
               height: 1.3,
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
           // Author Info
           Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(10),
+                  gradient: LinearGradient(
+                    colors: [AppColors.primary, AppColors.primaryLight],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
                   child: Text(
-                    _getInitials(paper.authorName ?? 'Unknown'),
-                    style: const TextStyle(
+                    _getAuthorInitials(),
+                    style: AppTextStyles.bodyMedium.copyWith(
                       color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,12 +230,13 @@ class ResearchDetailScreen extends StatelessWidget {
                       paper.authorName ?? 'Unknown Author',
                       style: AppTextStyles.bodyMedium.copyWith(
                         fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     if (paper.department != null)
                       Text(
                         paper.department!,
-                        style: AppTextStyles.caption.copyWith(
+                        style: AppTextStyles.bodySmall.copyWith(
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -176,194 +245,130 @@ class ResearchDetailScreen extends StatelessWidget {
               ),
             ],
           ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildMetadata() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
-        border: Border(
-          bottom: BorderSide(color: AppColors.border),
-        ),
-      ),
-      child: Row(
-        children: [
-          _buildMetaItem(
-            Icons.calendar_today_rounded,
-            _formatDate(paper.publishedDate ?? paper.createdAt),
-          ),
-          const SizedBox(width: 24),
-          _buildMetaItem(
-            Icons.visibility_rounded,
-            '${paper.viewCount} views',
-          ),
-          const SizedBox(width: 24),
-          _buildMetaItem(
-            Icons.download_rounded,
-            '${paper.downloadCount} downloads',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMetaItem(IconData icon, String text) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 16, color: AppColors.textSecondary),
-        const SizedBox(width: 6),
-        Text(
-          text,
-          style: AppTextStyles.caption.copyWith(
-            color: AppColors.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAbstract() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      color: AppColors.surface,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Abstract',
-            style: AppTextStyles.heading4.copyWith(
-              color: AppColors.primary,
+          // Co-Authors
+          if (paper.coAuthors != null && paper.coAuthors!.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.people_rounded,
+                    size: 18,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Co-authors: ${paper.coAuthors}',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            paper.abstract,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-              height: 1.7,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+          ],
 
-  Widget _buildKeywords() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border(
-          top: BorderSide(color: AppColors.border),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Keywords',
-            style: AppTextStyles.heading4.copyWith(
-              color: AppColors.primary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: paper.keywords!.map((keyword) {
-              return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+          // Published Date
+          if (paper.publishedDate != null) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Icon(
+                  Icons.calendar_today_rounded,
+                  size: 16,
+                  color: AppColors.textSecondary,
                 ),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  keyword,
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w500,
+                const SizedBox(width: 8),
+                Text(
+                  'Published ${DateFormat.yMMMd().format(paper.publishedDate!)}',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
                   ),
                 ),
-              );
-            }).toList(),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsSection(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildStatCard(
+              icon: Icons.visibility_rounded,
+              value: _formatNumber(paper.viewCount),
+              label: 'Views',
+              color: AppColors.info,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _buildStatCard(
+              icon: Icons.download_rounded,
+              value: _formatNumber(paper.downloadCount),
+              label: 'Downloads',
+              color: AppColors.success,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _buildStatCard(
+              icon: Icons.star_rounded,
+              value: '4.8',
+              label: 'Rating',
+              color: AppColors.warning,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStats() {
+  Widget _buildStatCard({
+    required IconData icon,
+    required String value,
+    required String label,
+    required Color color,
+  }) {
     return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.borderLight),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Research Statistics',
-            style: AppTextStyles.heading4.copyWith(
-              color: AppColors.primary,
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
             ),
+            child: Icon(icon, color: color, size: 20),
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  Icons.visibility_rounded,
-                  paper.viewCount.toString(),
-                  'Total Views',
-                  AppColors.info,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  Icons.download_rounded,
-                  paper.downloadCount.toString(),
-                  'Downloads',
-                  AppColors.success,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard(IconData icon, String value, String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Text(
             value,
-            style: AppTextStyles.heading3.copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
+            style: AppTextStyles.heading4.copyWith(
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             label,
             style: AppTextStyles.caption.copyWith(
@@ -375,74 +380,77 @@ class ResearchDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomBar(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 16,
-        bottom: MediaQuery.of(context).padding.bottom + 16,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
+  Widget _buildKeywordsSection(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Keywords',
+            style: AppTextStyles.heading4.copyWith(
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: paper.keywords!
+                .map(
+                  (keyword) => Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.accent.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AppColors.accent.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Text(
+                      keyword,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
           ),
         ],
       ),
-      child: Row(
+    );
+  }
+
+  Widget _buildAbstractSection(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // File Info
-          Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  paper.fileName ?? 'Document.pdf',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (paper.fileSize != null)
-                  Text(
-                    _formatFileSize(paper.fileSize!),
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-              ],
+          Text(
+            'Abstract',
+            style: AppTextStyles.heading4.copyWith(
+              color: AppColors.textPrimary,
             ),
           ),
-
-          const SizedBox(width: 16),
-
-          // Download Button
-          SizedBox(
-            height: 48,
-            child: ElevatedButton.icon(
-              onPressed: () => _handleDownload(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                foregroundColor: AppColors.primary,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-              ),
-              icon: const Icon(Icons.download_rounded, size: 20),
-              label: const Text(
-                'DOWNLOAD',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
-                ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.borderLight),
+            ),
+            child: Text(
+              paper.abstract,
+              style: AppTextStyles.bodyMedium.copyWith(
+                height: 1.7,
+                color: AppColors.textPrimary,
               ),
             ),
           ),
@@ -451,58 +459,593 @@ class ResearchDetailScreen extends StatelessWidget {
     );
   }
 
-  void _handleDownload(BuildContext context) async {
-    if (paper.fileUrl == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('File not available for download'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
-      return;
-    }
-
-    try {
-      final uri = Uri.parse(paper.fileUrl!);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Could not open file: $e'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+  Widget _buildMetadataSection(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Details',
+            style: AppTextStyles.heading4.copyWith(
+              color: AppColors.textPrimary,
+            ),
           ),
-        );
-      }
-    }
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.borderLight),
+            ),
+            child: Column(
+              children: [
+                _buildMetadataRow('Category', paper.category),
+                if (paper.department != null)
+                  _buildMetadataRow('Department', paper.department!),
+                if (paper.fileName != null)
+                  _buildMetadataRow('File', paper.fileName!),
+                if (paper.fileSize != null)
+                  _buildMetadataRow('Size', _formatFileSize(paper.fileSize!)),
+                if (paper.createdAt != null)
+                  _buildMetadataRow(
+                    'Submitted',
+                    DateFormat.yMMMd().format(paper.createdAt!),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
-  String _getInitials(String name) {
-    final parts = name.trim().split(' ');
+  Widget _buildMetadataRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          Flexible(
+            child: Text(
+              value,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.end,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge() {
+    Color badgeColor;
+    IconData badgeIcon;
+
+    switch (paper.status.toLowerCase()) {
+      case 'published':
+        badgeColor = AppColors.success;
+        badgeIcon = Icons.check_circle_rounded;
+        break;
+      case 'pending':
+        badgeColor = AppColors.warning;
+        badgeIcon = Icons.access_time_rounded;
+        break;
+      case 'rejected':
+        badgeColor = AppColors.error;
+        badgeIcon = Icons.cancel_rounded;
+        break;
+      default:
+        badgeColor = Colors.grey;
+        badgeIcon = Icons.help_rounded;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: badgeColor.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(badgeIcon, size: 14, color: Colors.white),
+          const SizedBox(width: 4),
+          Text(
+            paper.status.toUpperCase(),
+            style: AppTextStyles.caption.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPdfViewerButton(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _openPdfViewer(context),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColors.primary, AppColors.primaryLight],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.picture_as_pdf_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'View Full Document',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        paper.fileName ?? 'PDF Document',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: Colors.white.withOpacity(0.8),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getAuthorInitials() {
+    if (paper.authorName == null) return '?';
+    final parts = paper.authorName!.trim().split(' ');
     if (parts.length >= 2) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
-    return name.isNotEmpty ? name[0].toUpperCase() : '?';
+    return paper.authorName!.isNotEmpty
+        ? paper.authorName![0].toUpperCase()
+        : '?';
   }
 
-  String _formatDate(DateTime? date) {
-    if (date == null) return 'N/A';
-    final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  String _formatNumber(int number) {
+    if (number >= 1000) {
+      return '${(number / 1000).toStringAsFixed(1)}K';
+    }
+    return number.toString();
   }
 
   String _formatFileSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+}
+
+/// Full-screen PDF Viewer Screen
+class PdfViewerScreen extends StatefulWidget {
+  final String pdfUrl;
+  final String title;
+
+  const PdfViewerScreen({super.key, required this.pdfUrl, required this.title});
+
+  @override
+  State<PdfViewerScreen> createState() => _PdfViewerScreenState();
+}
+
+class _PdfViewerScreenState extends State<PdfViewerScreen> {
+  final GlobalKey<SfPdfViewerState> _pdfViewerKey = GlobalKey();
+  final PdfViewerController _pdfViewerController = PdfViewerController();
+  bool _isLoading = true;
+  String? _error;
+  int _currentPage = 1;
+  int _totalPages = 0;
+
+  @override
+  void dispose() {
+    _pdfViewerController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.title,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (_totalPages > 0)
+              Text(
+                'Page $_currentPage of $_totalPages',
+                style: AppTextStyles.caption.copyWith(
+                  color: Colors.white.withOpacity(0.7),
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          // Zoom Out
+          IconButton(
+            icon: const Icon(Icons.zoom_out_rounded),
+            onPressed: () {
+              _pdfViewerController.zoomLevel =
+                  (_pdfViewerController.zoomLevel - 0.25).clamp(0.5, 3.0);
+            },
+            tooltip: 'Zoom Out',
+          ),
+          // Zoom In
+          IconButton(
+            icon: const Icon(Icons.zoom_in_rounded),
+            onPressed: () {
+              _pdfViewerController.zoomLevel =
+                  (_pdfViewerController.zoomLevel + 0.25).clamp(0.5, 3.0);
+            },
+            tooltip: 'Zoom In',
+          ),
+          // Jump to page
+          IconButton(
+            icon: const Icon(Icons.find_in_page_rounded),
+            onPressed: () => _showGoToPageDialog(),
+            tooltip: 'Go to Page',
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: Stack(
+        children: [
+          // PDF Viewer
+          SfPdfViewer.network(
+            widget.pdfUrl,
+            key: _pdfViewerKey,
+            controller: _pdfViewerController,
+            canShowScrollHead: true,
+            canShowScrollStatus: true,
+            enableDoubleTapZooming: true,
+            enableTextSelection: true,
+            onDocumentLoaded: (PdfDocumentLoadedDetails details) {
+              setState(() {
+                _isLoading = false;
+                _totalPages = details.document.pages.count;
+              });
+            },
+            onDocumentLoadFailed: (PdfDocumentLoadFailedDetails details) {
+              setState(() {
+                _isLoading = false;
+                _error = details.error;
+              });
+            },
+            onPageChanged: (PdfPageChangedDetails details) {
+              setState(() {
+                _currentPage = details.newPageNumber;
+              });
+            },
+          ),
+
+          // Loading Overlay
+          if (_isLoading)
+            Container(
+              color: AppColors.background,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      color: AppColors.primary,
+                      strokeWidth: 3,
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Loading PDF...',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // Error State
+          if (_error != null)
+            Container(
+              color: AppColors.background,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.error_outline_rounded,
+                          size: 48,
+                          color: AppColors.error,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Failed to Load PDF',
+                        style: AppTextStyles.heading4.copyWith(
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _error!,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _isLoading = true;
+                            _error = null;
+                          });
+                        },
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Retry'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+      // Bottom Navigation Bar for quick controls
+      bottomNavigationBar: _totalPages > 0
+          ? Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                child: Row(
+                  children: [
+                    // First Page
+                    _buildNavButton(
+                      icon: Icons.first_page_rounded,
+                      onPressed: () => _pdfViewerController.jumpToPage(1),
+                      enabled: _currentPage > 1,
+                    ),
+                    const SizedBox(width: 8),
+                    // Previous Page
+                    _buildNavButton(
+                      icon: Icons.chevron_left_rounded,
+                      onPressed: () => _pdfViewerController.previousPage(),
+                      enabled: _currentPage > 1,
+                    ),
+
+                    // Page Indicator
+                    Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 16),
+                        child: SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            activeTrackColor: AppColors.primary,
+                            inactiveTrackColor: AppColors.borderLight,
+                            thumbColor: AppColors.primary,
+                            overlayColor: AppColors.primary.withOpacity(0.2),
+                            trackHeight: 4,
+                          ),
+                          child: Slider(
+                            value: _currentPage.toDouble(),
+                            min: 1,
+                            max: _totalPages.toDouble(),
+                            onChanged: (value) {
+                              _pdfViewerController.jumpToPage(value.toInt());
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Next Page
+                    _buildNavButton(
+                      icon: Icons.chevron_right_rounded,
+                      onPressed: () => _pdfViewerController.nextPage(),
+                      enabled: _currentPage < _totalPages,
+                    ),
+                    const SizedBox(width: 8),
+                    // Last Page
+                    _buildNavButton(
+                      icon: Icons.last_page_rounded,
+                      onPressed: () =>
+                          _pdfViewerController.jumpToPage(_totalPages),
+                      enabled: _currentPage < _totalPages,
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : null,
+    );
+  }
+
+  Widget _buildNavButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    required bool enabled,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: enabled ? onPressed : null,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: enabled
+                ? AppColors.primary.withOpacity(0.1)
+                : AppColors.borderLight,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            icon,
+            color: enabled ? AppColors.primary : AppColors.textLight,
+            size: 24,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showGoToPageDialog() {
+    final controller = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Go to Page', style: AppTextStyles.heading4),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: 'Enter page number (1-$_totalPages)',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.primary, width: 2),
+            ),
+          ),
+          onSubmitted: (value) {
+            _goToPage(int.tryParse(value));
+            Navigator.pop(context);
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              _goToPage(int.tryParse(controller.text));
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text('Go'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _goToPage(int? page) {
+    if (page != null && page >= 1 && page <= _totalPages) {
+      _pdfViewerController.jumpToPage(page);
+    }
   }
 }

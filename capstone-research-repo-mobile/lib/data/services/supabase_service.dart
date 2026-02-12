@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:bcrypt/bcrypt.dart';
@@ -162,24 +163,40 @@ class SupabaseService {
     String? search,
     String? year,
   }) async {
-    var query = client
-        .from('research_papers')
-        .select('*, users!author_id(full_name, email)')
-        .eq('status', 'approved');
+    try {
+      // Try fetching with join first
+      var query = client
+          .from('research_papers')
+          .select('*, users!author_id(full_name, email)')
+          .or('status.eq.approved,status.eq.published');
 
-    if (category != null && category.isNotEmpty) {
-      query = query.eq('category', category);
+      if (category != null && category.isNotEmpty) {
+        query = query.eq('category', category);
+      }
+
+      if (search != null && search.isNotEmpty) {
+        query = query.or('title.ilike.%$search%,abstract.ilike.%$search%');
+      }
+
+      final response = await query.order('created_at', ascending: false);
+
+      return (response as List)
+          .map((json) => ResearchModel.fromJson(json))
+          .toList();
+    } catch (e) {
+      // If join fails, try without join
+      debugPrint('⚠️ Query with join failed, trying without: $e');
+      
+      final response = await client
+          .from('research_papers')
+          .select('*')
+          .or('status.eq.approved,status.eq.published')
+          .order('created_at', ascending: false);
+
+      return (response as List)
+          .map((json) => ResearchModel.fromJson(json))
+          .toList();
     }
-
-    if (search != null && search.isNotEmpty) {
-      query = query.or('title.ilike.%$search%,abstract.ilike.%$search%');
-    }
-
-    final response = await query.order('published_date', ascending: false);
-
-    return (response as List)
-        .map((json) => ResearchModel.fromJson(json))
-        .toList();
   }
 
   /// Get a single research paper by ID

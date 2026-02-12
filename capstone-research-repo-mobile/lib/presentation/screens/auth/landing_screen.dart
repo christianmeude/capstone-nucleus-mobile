@@ -3,14 +3,9 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../routes/app_routes.dart';
 
-class LandingScreen extends StatefulWidget {
+class LandingScreen extends StatelessWidget {
   const LandingScreen({super.key});
 
-  @override
-  State<LandingScreen> createState() => _LandingScreenState();
-}
-
-class _LandingScreenState extends State<LandingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -19,15 +14,17 @@ class _LandingScreenState extends State<LandingScreen> {
         child: Column(
           children: [
             // Header with NU branding
-            _buildHeader(),
+            _buildHeader(context),
 
             // Hero Section
-            Expanded(child: _buildHeroSection()),
+            Expanded(
+              child: _buildHeroSection(context),
+            ),
 
             // Buttons
             Padding(
               padding: const EdgeInsets.all(24),
-              child: _buildButtonSection(),
+              child: _buildButtonSection(context),
             ),
 
             // Footer
@@ -39,7 +36,7 @@ class _LandingScreenState extends State<LandingScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
@@ -92,7 +89,7 @@ class _LandingScreenState extends State<LandingScreen> {
     );
   }
 
-  Widget _buildHeroSection() {
+  Widget _buildHeroSection(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
@@ -201,7 +198,7 @@ class _LandingScreenState extends State<LandingScreen> {
     );
   }
 
-  Widget _buildButtonSection() {
+  Widget _buildButtonSection(BuildContext context) {
     return Column(
       children: [
         // Primary Gold Button (like NU's "APPLY NOW")
@@ -264,7 +261,9 @@ class _LandingScreenState extends State<LandingScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Text(
         "National University Research Repository",
-        style: AppTextStyles.caption.copyWith(color: AppColors.textLight),
+        style: AppTextStyles.caption.copyWith(
+          color: AppColors.textLight,
+        ),
         textAlign: TextAlign.center,
       ),
     );

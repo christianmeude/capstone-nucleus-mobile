@@ -5,7 +5,6 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/validators.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../routes/app_routes.dart';
-import '../../widgets/common/animated_widgets.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -81,116 +80,99 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          // Background decoration
-          _buildBackground(),
+      backgroundColor: AppColors.surface,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 16,
+              color: AppColors.primary,
+            ),
+          ),
+        ),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 20),
 
-          // Content
-          SafeArea(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 16),
+                  // Header
+                  _buildHeader(),
 
-                      // Back Button
-                      _buildBackButton(),
+                  const SizedBox(height: 40),
 
-                      const SizedBox(height: 40),
+                  // Form Fields
+                  _buildFormFields(),
 
-                      // Header
-                      _buildHeader(),
+                  const SizedBox(height: 28),
 
-                      const SizedBox(height: 48),
+                  // Login Button
+                  _buildLoginButton(),
 
-                      // Form Fields
-                      _buildFormFields(),
+                  const SizedBox(height: 24),
 
-                      const SizedBox(height: 32),
+                  // Register Link
+                  _buildRegisterLink(),
 
-                      // Login Button
-                      _buildLoginButton(),
-
-                      const SizedBox(height: 24),
-
-                      // Register Link
-                      _buildRegisterLink(),
-
-                      const SizedBox(height: 40),
-                    ],
-                  ),
-                ),
+                  const SizedBox(height: 40),
+                ],
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBackground() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-      ),
-    );
-  }
-
-  Widget _buildBackButton() {
-    return IconButton(
-      onPressed: () => Navigator.pop(context),
-      style: IconButton.styleFrom(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
         ),
-      ),
-      icon: const Icon(
-        Icons.arrow_back_ios_new_rounded,
-        size: 18,
-        color: AppColors.textPrimary,
       ),
     );
   }
 
   Widget _buildHeader() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // NU Logo
         Container(
-          width: 56,
-          height: 56,
+          width: 80,
+          height: 80,
           decoration: BoxDecoration(
             color: AppColors.primary,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
-          child: Center(
+          child: const Center(
             child: Text(
               "NU",
               style: TextStyle(
                 color: AppColors.accent,
                 fontWeight: FontWeight.w900,
-                fontSize: 18,
+                fontSize: 28,
               ),
             ),
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 28),
         Text(
           "Welcome Back",
-          style: AppTextStyles.display.copyWith(
-            fontSize: 32,
-            height: 1.2,
-            color: AppColors.primary,
-          ),
+          style: AppTextStyles.heading1.copyWith(color: AppColors.primary),
         ),
         const SizedBox(height: 8),
         Text(
@@ -205,33 +187,34 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildFormFields() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Email Field
-        AnimatedInputField(
+        _buildInputField(
           controller: _emailController,
           focusNode: _emailFocusNode,
           label: "Email Address",
-          hint: "your.email@students.com",
-          prefixIcon: Icons.email_outlined,
+          hint: "your.email@students.national-u.edu.ph",
+          icon: Icons.email_outlined,
           keyboardType: TextInputType.emailAddress,
           validator: Validators.validateEmail,
           textInputAction: TextInputAction.next,
-          onFieldSubmitted: (_) => _passwordFocusNode.requestFocus(),
+          onSubmitted: () => _passwordFocusNode.requestFocus(),
         ),
 
         const SizedBox(height: 20),
 
         // Password Field
-        AnimatedInputField(
+        _buildInputField(
           controller: _passwordController,
           focusNode: _passwordFocusNode,
           label: "Password",
           hint: "Enter your password",
-          prefixIcon: Icons.lock_outline_rounded,
+          icon: Icons.lock_outline_rounded,
           obscureText: _obscurePassword,
           validator: Validators.validatePassword,
           textInputAction: TextInputAction.done,
-          onFieldSubmitted: (_) => _handleLogin(),
+          onSubmitted: _handleLogin,
           suffixIcon: IconButton(
             onPressed: () =>
                 setState(() => _obscurePassword = !_obscurePassword),
@@ -240,7 +223,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ? Icons.visibility_off_rounded
                   : Icons.visibility_rounded,
               color: AppColors.textLight,
-              size: 22,
+              size: 20,
             ),
           ),
         ),
@@ -251,18 +234,86 @@ class _LoginScreenState extends State<LoginScreen> {
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
-            onPressed: () {
-              // TODO: Implement forgot password
-            },
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            ),
+            onPressed: () {},
+            style: TextButton.styleFrom(padding: EdgeInsets.zero),
             child: Text(
               "Forgot Password?",
               style: AppTextStyles.bodySmall.copyWith(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w600,
               ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required String label,
+    required String hint,
+    required IconData icon,
+    bool obscureText = false,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+    TextInputAction? textInputAction,
+    VoidCallback? onSubmitted,
+    Widget? suffixIcon,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.labelMedium.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          focusNode: focusNode,
+          obscureText: obscureText,
+          keyboardType: keyboardType,
+          validator: validator,
+          textInputAction: textInputAction,
+          onFieldSubmitted: (_) => onSubmitted?.call(),
+          style: AppTextStyles.bodyMedium,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textLight,
+            ),
+            prefixIcon: Icon(icon, color: AppColors.textSecondary, size: 20),
+            suffixIcon: suffixIcon,
+            filled: true,
+            fillColor: AppColors.background,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.border, width: 1),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.primary, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.error, width: 1),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.error, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
             ),
           ),
         ),
@@ -322,7 +373,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Text(
             "Sign Up",
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.accent,
+              color: AppColors.primary,
               fontWeight: FontWeight.w700,
             ),
           ),

@@ -6,22 +6,22 @@ import 'app_text_styles.dart';
 ThemeData buildAppTheme() {
   // 1. Create the base theme with all your custom settings
   final baseTheme = ThemeData(
-    primaryColor: AppColors.primary500,
+    primaryColor: AppColors.primary,
     useMaterial3: true,
     scaffoldBackgroundColor: AppColors.background,
     
     // Color Scheme
     colorScheme: const ColorScheme.light(
-      primary: AppColors.primary500,
-      secondary: AppColors.accent,
+      primary: AppColors.primary,
+      secondary: AppColors.secondary,
       surface: AppColors.cardBackground,
       error: AppColors.error,
     ),
 
     // AppBar Theme
     appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.surface,
-      elevation: 0,
+      backgroundColor: Colors.white,
+      elevation: 1,
       iconTheme: IconThemeData(color: AppColors.textPrimary),
       titleTextStyle: TextStyle(
         fontSize: 18,
@@ -42,13 +42,13 @@ ThemeData buildAppTheme() {
 
     // Button Themes
     buttonTheme: const ButtonThemeData(
-      buttonColor: AppColors.primary500,
+      buttonColor: AppColors.primary,
       textTheme: ButtonTextTheme.primary,
     ),
 
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary500,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         shape: RoundedRectangleBorder(
@@ -72,7 +72,7 @@ ThemeData buildAppTheme() {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: AppColors.primary500, width: 2),
+        borderSide: const BorderSide(color: AppColors.primary, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       hintStyle: const TextStyle(color: AppColors.textLight),

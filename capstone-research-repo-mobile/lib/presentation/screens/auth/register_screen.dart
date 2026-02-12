@@ -4,7 +4,6 @@ import '../../../core/constants/app_text_styles.dart';
 import '../../../core/utils/validators.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../routes/app_routes.dart';
-import '../../widgets/common/animated_widgets.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -88,101 +87,87 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          // Background decoration
-          _buildBackground(),
-
-          // Content
-          SafeArea(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 16),
-                      _buildBackButton(),
-                      const SizedBox(height: 32),
-                      _buildHeader(),
-                      const SizedBox(height: 36),
-                      _buildFormFields(),
-                      const SizedBox(height: 32),
-                      _buildSubmitButton(),
-                      const SizedBox(height: 24),
-                      _buildLoginLink(),
-                      const SizedBox(height: 40),
-                    ],
-                  ),
-                ),
+      backgroundColor: AppColors.surface,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 16,
+              color: AppColors.primary,
+            ),
+          ),
+        ),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 10),
+                  _buildHeader(),
+                  const SizedBox(height: 32),
+                  _buildFormFields(),
+                  const SizedBox(height: 28),
+                  _buildSubmitButton(),
+                  const SizedBox(height: 24),
+                  _buildLoginLink(),
+                  const SizedBox(height: 40),
+                ],
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBackground() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-      ),
-    );
-  }
-
-  Widget _buildBackButton() {
-    return IconButton(
-      onPressed: () => Navigator.pop(context),
-      style: IconButton.styleFrom(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
         ),
-      ),
-      icon: const Icon(
-        Icons.arrow_back_ios_new_rounded,
-        size: 18,
-        color: AppColors.textPrimary,
       ),
     );
   }
 
   Widget _buildHeader() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // NU Logo
         Container(
-          width: 56,
-          height: 56,
+          width: 80,
+          height: 80,
           decoration: BoxDecoration(
             color: AppColors.primary,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
-          child: Center(
+          child: const Center(
             child: Text(
               "NU",
               style: TextStyle(
                 color: AppColors.accent,
                 fontWeight: FontWeight.w900,
-                fontSize: 18,
+                fontSize: 28,
               ),
             ),
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 28),
         Text(
           "Create Account",
-          style: AppTextStyles.display.copyWith(
-            fontSize: 32,
-            height: 1.2,
-            color: AppColors.primary,
-          ),
+          style: AppTextStyles.heading1.copyWith(color: AppColors.primary),
         ),
         const SizedBox(height: 8),
         Text(
@@ -195,49 +180,121 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required String label,
+    required String hint,
+    required IconData icon,
+    bool obscureText = false,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+    TextInputAction? textInputAction,
+    VoidCallback? onSubmitted,
+    Widget? suffixIcon,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.labelMedium.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          focusNode: focusNode,
+          obscureText: obscureText,
+          keyboardType: keyboardType,
+          validator: validator,
+          textInputAction: textInputAction,
+          onFieldSubmitted: (_) => onSubmitted?.call(),
+          style: AppTextStyles.bodyMedium,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textLight,
+            ),
+            prefixIcon: Icon(icon, color: AppColors.textSecondary, size: 20),
+            suffixIcon: suffixIcon,
+            filled: true,
+            fillColor: AppColors.background,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.border, width: 1),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.primary, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.error, width: 1),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.error, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildFormFields() {
     return Column(
       children: [
         // Full Name
-        AnimatedInputField(
+        _buildInputField(
           controller: _nameController,
           focusNode: _nameFocus,
           label: "Full Name",
           hint: "Juan Dela Cruz",
-          prefixIcon: Icons.person_outline_rounded,
+          icon: Icons.person_outline_rounded,
           validator: Validators.validateName,
           textInputAction: TextInputAction.next,
-          onFieldSubmitted: (_) => _emailFocus.requestFocus(),
+          onSubmitted: () => _emailFocus.requestFocus(),
         ),
 
         const SizedBox(height: 18),
 
         // Email
-        AnimatedInputField(
+        _buildInputField(
           controller: _emailController,
           focusNode: _emailFocus,
           label: "Email Address",
           hint: "student@national-u.edu.ph",
-          prefixIcon: Icons.email_outlined,
+          icon: Icons.email_outlined,
           keyboardType: TextInputType.emailAddress,
           validator: Validators.validateEmail,
           textInputAction: TextInputAction.next,
-          onFieldSubmitted: (_) => _passwordFocus.requestFocus(),
+          onSubmitted: () => _passwordFocus.requestFocus(),
         ),
 
         const SizedBox(height: 18),
 
         // Password
-        AnimatedInputField(
+        _buildInputField(
           controller: _passwordController,
           focusNode: _passwordFocus,
           label: "Password",
           hint: "Create a strong password",
-          prefixIcon: Icons.lock_outline_rounded,
+          icon: Icons.lock_outline_rounded,
           obscureText: _obscurePassword,
           validator: Validators.validatePassword,
           textInputAction: TextInputAction.next,
-          onFieldSubmitted: (_) => _confirmFocus.requestFocus(),
+          onSubmitted: () => _confirmFocus.requestFocus(),
           suffixIcon: IconButton(
             onPressed: () =>
                 setState(() => _obscurePassword = !_obscurePassword),
@@ -246,7 +303,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ? Icons.visibility_off_rounded
                   : Icons.visibility_rounded,
               color: AppColors.textLight,
-              size: 22,
+              size: 20,
             ),
           ),
         ),
@@ -254,28 +311,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
         const SizedBox(height: 18),
 
         // Confirm Password
-        AnimatedInputField(
+        _buildInputField(
           controller: _confirmController,
           focusNode: _confirmFocus,
           label: "Confirm Password",
           hint: "Re-enter your password",
-          prefixIcon: Icons.lock_rounded,
+          icon: Icons.lock_rounded,
           obscureText: _obscureConfirm,
           textInputAction: TextInputAction.done,
-          onFieldSubmitted: (_) => _handleRegister(),
-          validator: (v) => Validators.validateConfirmPassword(
-            v,
-            _passwordController.text,
-          ),
+          onSubmitted: _handleRegister,
+          validator: (v) =>
+              Validators.validateConfirmPassword(v, _passwordController.text),
           suffixIcon: IconButton(
-            onPressed: () =>
-                setState(() => _obscureConfirm = !_obscureConfirm),
+            onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
             icon: Icon(
               _obscureConfirm
                   ? Icons.visibility_off_rounded
                   : Icons.visibility_rounded,
               color: AppColors.textLight,
-              size: 22,
+              size: 20,
             ),
           ),
         ),
@@ -334,7 +388,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Text(
             "Sign In",
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.accent,
+              color: AppColors.primary,
               fontWeight: FontWeight.w700,
             ),
           ),

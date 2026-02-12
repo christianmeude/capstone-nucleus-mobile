@@ -49,51 +49,26 @@ class AppColors {
   static const Color borderMedium = Color(0xFFD1D5DB);
 
   // Interactive colors
-  static const Color hover = Color(0xFFF5F3F0);
-  static const Color pressed = Color(0xFFE8E6E3);
+  static const Color hover = Color(0xFFF3F4F6);
   static const Color disabled = Color(0xFFD1D5DB);
 
-  // Gradient presets
+  // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [Color(0xFF1A3263), Color(0xFF2E4A7D)],
+    colors: [primary, primaryLight],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
-  static const LinearGradient accentGradient = LinearGradient(
-    colors: [Color(0xFFFAB95B), Color(0xFFE5A23D)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
+  // Shadows
+  static const BoxShadow softShadow = BoxShadow(
+    color: Color(0x1A000000),
+    blurRadius: 10,
+    offset: Offset(0, 4),
   );
 
-  static const LinearGradient cardGradient = LinearGradient(
-    colors: [Color(0xFFFFFFFF), Color(0xFFFAF9F7)],
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-  );
-
-  static const LinearGradient warmGradient = LinearGradient(
-    colors: [Color(0xFFFAB95B), Color(0xFFE5A23D)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
-  // Shadows - Single BoxShadow for direct use
-  static BoxShadow get softShadow => BoxShadow(
-    color: const Color(0xFF1A3263).withOpacity(0.06),
-    blurRadius: 16,
-    offset: const Offset(0, 4),
-  );
-
-  static BoxShadow get cardShadow => BoxShadow(
-    color: const Color(0xFF1A3263).withOpacity(0.04),
-    blurRadius: 12,
-    offset: const Offset(0, 2),
-  );
-
-  static BoxShadow get elevatedShadow => BoxShadow(
-    color: const Color(0xFF1A3263).withOpacity(0.08),
-    blurRadius: 24,
-    offset: const Offset(0, 8),
+  static const BoxShadow elevatedShadow = BoxShadow(
+    color: Color(0x1A000000),
+    blurRadius: 20,
+    offset: Offset(0, 8),
   );
 }

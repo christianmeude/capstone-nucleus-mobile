@@ -6,7 +6,6 @@ import '../../../data/models/user_model.dart';
 import '../../../routes/app_routes.dart';
 import '../research/browse_research_screen.dart';
 import '../research/my_research_screen.dart';
-import '../research/search_screen.dart';
 import '../research/analytics_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -127,17 +126,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  String get _userInitials {
-    if (_currentUser == null) return "?";
-    final parts = _currentUser!.fullName.trim().split(' ');
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    }
-    return _currentUser!.fullName.isNotEmpty
-        ? _currentUser!.fullName[0].toUpperCase()
-        : '?';
-  }
-
   String get _greeting {
     final hour = DateTime.now().hour;
     if (hour < 12) return "Good Morning";
@@ -147,7 +135,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   List<Widget> get _pages => [
     const BrowseResearchScreen(),
-    const SearchScreen(),
     const MyResearchScreen(),
     const AnalyticsScreen(),
   ];
@@ -180,21 +167,34 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildAppBar() {
     return Container(
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 8,
+        top: MediaQuery.of(context).padding.top + 12,
         left: 20,
         right: 20,
-        bottom: 12,
+        bottom: 16,
       ),
-      color: AppColors.primary,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.primary, AppColors.primaryLight],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
       child: Row(
         children: [
-          // NU Logo
+          // NU Logo with subtle animation
           Container(
-            width: 40,
-            height: 40,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Center(
               child: Text(
@@ -202,15 +202,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 style: TextStyle(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w900,
-                  fontSize: 14,
+                  fontSize: 16,
+                  letterSpacing: -0.5,
                 ),
               ),
             ),
           ),
 
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
 
-          // Greeting
+          // Greeting with improved typography
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,77 +219,112 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               children: [
                 Text(
                   _greeting,
-                  style: AppTextStyles.caption.copyWith(
-                    color: Colors.white70,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 12,
                   ),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   _isLoading
                       ? "..."
                       : _currentUser?.fullName.split(' ')[0] ?? 'User',
                   style: AppTextStyles.heading4.copyWith(
-                    fontSize: 18,
+                    fontSize: 20,
                     color: Colors.white,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
             ),
           ),
 
-          // Notification
-          IconButton(
+          // Notification with modern badge
+          _buildAppBarButton(
+            icon: Icons.notifications_outlined,
             onPressed: () {},
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.white.withOpacity(0.15),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            icon: Badge(
-              smallSize: 8,
-              backgroundColor: AppColors.accent,
-              child: const Icon(
-                Icons.notifications_outlined,
-                color: Colors.white,
-                size: 22,
-              ),
-            ),
+            showBadge: true,
           ),
 
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
 
-          // Logout
-          IconButton(
+          // Logout with tooltip
+          _buildAppBarButton(
+            icon: Icons.logout_rounded,
             onPressed: _handleLogout,
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.white.withOpacity(0.15),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            icon: const Icon(
-              Icons.logout_rounded,
-              color: Colors.white,
-              size: 22,
-            ),
           ),
         ],
       ),
     );
   }
 
+  Widget _buildAppBarButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    bool showBadge = false,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.1),
+              width: 1,
+            ),
+          ),
+          child: showBadge
+              ? Badge(
+                  smallSize: 9,
+                  backgroundColor: AppColors.accent,
+                  child: Icon(icon, color: Colors.white, size: 22),
+                )
+              : Icon(icon, color: Colors.white, size: 22),
+        ),
+      ),
+    );
+  }
+
   Widget _buildFAB() {
-    return FloatingActionButton.extended(
-      onPressed: () => Navigator.pushNamed(context, AppRoutes.submitResearch),
-      backgroundColor: AppColors.accent,
-      foregroundColor: AppColors.primary,
-      elevation: 4,
-      icon: const Icon(Icons.add_rounded, size: 20),
-      label: Text(
-        "SUBMIT",
-        style: TextStyle(
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.5,
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: FloatingActionButton.extended(
+        onPressed: () => Navigator.pushNamed(context, AppRoutes.submitResearch),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        icon: Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(Icons.add_rounded, size: 20),
+        ),
+        label: Text(
+          "Submit Research",
+          style: AppTextStyles.buttonMedium.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -300,22 +336,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         color: AppColors.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
           ),
         ],
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildNavItem(0, Icons.grid_view_rounded, "Browse"),
-              _buildNavItem(1, Icons.search_rounded, "Search"),
-              _buildNavItem(2, Icons.folder_rounded, "My Papers"),
-              _buildNavItem(3, Icons.bar_chart_rounded, "Analytics"),
+              _buildNavItem(0, Icons.explore_rounded, Icons.explore_outlined, "Explore"),
+              _buildNavItem(1, Icons.folder_rounded, Icons.folder_outlined, "My Papers"),
+              _buildNavItem(2, Icons.analytics_rounded, Icons.analytics_outlined, "Analytics"),
             ],
           ),
         ),
@@ -323,35 +358,37 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
+  Widget _buildNavItem(int index, IconData activeIcon, IconData inactiveIcon, String label) {
     final isSelected = _currentIndex == index;
 
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
       behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.accent.withOpacity(0.15) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: Column(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              icon,
+              isSelected ? activeIcon : inactiveIcon,
               color: isSelected ? AppColors.primary : AppColors.textLight,
               size: 24,
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: AppTextStyles.caption.copyWith(
-                color: isSelected ? AppColors.primary : AppColors.textLight,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                fontSize: 11,
+            if (isSelected) ...[
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: AppTextStyles.label.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),
