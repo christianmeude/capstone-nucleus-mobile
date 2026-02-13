@@ -14,6 +14,56 @@ class MyResearchScreen extends StatefulWidget {
 }
 
 class _MyResearchScreenState extends State<MyResearchScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  String _selectedFilter = 'All'; // All, Published, Pending, Rejected
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<ResearchModel> _filterPapers(List<ResearchModel> papers) {
+    var filtered = papers;
+
+    // Apply status filter
+    if (_selectedFilter != 'All') {
+      filtered = filtered.where((paper) {
+        if (_selectedFilter == 'Published') {
+          return paper.status == AppConstants.statusApproved ||
+              paper.status == 'published';
+        } else if (_selectedFilter == 'Pending') {
+          return paper.status == AppConstants.statusPending;
+        } else if (_selectedFilter == 'Rejected') {
+          return paper.status == AppConstants.statusRejected;
+        }
+        return true;
+      }).toList();
+    }
+
+    // Apply search filter
+    if (_searchQuery.isNotEmpty) {
+      filtered = filtered.where((paper) {
+        final query = _searchQuery.toLowerCase();
+        return paper.title.toLowerCase().contains(query) ||
+            (paper.authorName?.toLowerCase().contains(query) ?? false) ||
+            (paper.department?.toLowerCase().contains(query) ?? false) ||
+            (paper.keywords?.any((k) => k.toLowerCase().contains(query)) ??
+                false);
+      }).toList();
+    }
+
+    // Sort by created date (newest first)
+    filtered.sort(
+      (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
+        a.createdAt ?? DateTime.now(),
+      ),
+    );
+
+    return filtered;
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<ResearchModel>>(
@@ -23,7 +73,8 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
           return _buildLoadingState();
         }
 
-        final papers = snapshot.data ?? [];
+        final allPapers = snapshot.data ?? [];
+        final filteredPapers = _filterPapers(allPapers);
 
         return RefreshIndicator(
           onRefresh: () async => setState(() {}),
@@ -38,12 +89,18 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
               children: [
                 _buildHeader(),
                 const SizedBox(height: 20),
-                _buildStatsRow(papers),
-                const SizedBox(height: 28),
-                if (papers.isEmpty)
+                _buildStatsRow(allPapers),
+                const SizedBox(height: 20),
+                _buildSearchBar(),
+                const SizedBox(height: 16),
+                _buildFilterChips(),
+                const SizedBox(height: 20),
+                if (allPapers.isEmpty)
                   _buildEmptyState()
+                else if (filteredPapers.isEmpty)
+                  _buildNoResultsState()
                 else
-                  _buildPapersList(papers),
+                  _buildPapersList(filteredPapers),
                 const SizedBox(height: 80),
               ],
             ),
@@ -150,6 +207,117 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
     );
   }
 
+  Widget _buildSearchBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (value) {
+          setState(() {
+            _searchQuery = value;
+          });
+        },
+        style: AppTextStyles.bodyMedium,
+        decoration: InputDecoration(
+          hintText: 'Search by title, author, keywords...',
+          hintStyle: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textLight,
+          ),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            color: AppColors.textLight,
+            size: 22,
+          ),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: Icon(
+                    Icons.clear_rounded,
+                    color: AppColors.textLight,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _searchController.clear();
+                      _searchQuery = '';
+                    });
+                  },
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChips() {
+    final filters = ['All', 'Published', 'Pending', 'Rejected'];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: filters.map((filter) {
+          final isSelected = _selectedFilter == filter;
+          Color chipColor;
+
+          switch (filter) {
+            case 'Published':
+              chipColor = AppColors.success;
+              break;
+            case 'Pending':
+              chipColor = AppColors.warning;
+              break;
+            case 'Rejected':
+              chipColor = AppColors.error;
+              break;
+            default:
+              chipColor = AppColors.primary;
+          }
+
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              label: Text(filter),
+              selected: isSelected,
+              onSelected: (selected) {
+                setState(() {
+                  _selectedFilter = filter;
+                });
+              },
+              backgroundColor: AppColors.surface,
+              selectedColor: chipColor.withOpacity(0.15),
+              checkmarkColor: chipColor,
+              labelStyle: AppTextStyles.bodySmall.copyWith(
+                color: isSelected ? chipColor : AppColors.textSecondary,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+              side: BorderSide(
+                color: isSelected ? chipColor : AppColors.border,
+                width: isSelected ? 1.5 : 1,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              showCheckmark: true,
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
@@ -178,11 +346,76 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
     );
   }
 
+  Widget _buildNoResultsState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 60),
+        child: Column(
+          children: [
+            Icon(
+              Icons.search_off_rounded,
+              size: 48,
+              color: AppColors.textLight,
+            ),
+            const SizedBox(height: 16),
+            Text("No Results Found", style: AppTextStyles.heading4),
+            const SizedBox(height: 8),
+            Text(
+              "Try adjusting your search\nor filter criteria",
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  _searchController.clear();
+                  _searchQuery = '';
+                  _selectedFilter = 'All';
+                });
+              },
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Clear Filters'),
+              style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildPapersList(List<ResearchModel> papers) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("All Submissions", style: AppTextStyles.labelMedium),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              _selectedFilter == 'All'
+                  ? "All Submissions"
+                  : "$_selectedFilter Submissions",
+              style: AppTextStyles.labelMedium,
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${papers.length}',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 12),
         ListView.separated(
           shrinkWrap: true,
@@ -234,9 +467,7 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             count.toString(),
-            style: AppTextStyles.heading4.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+            style: AppTextStyles.heading4.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 2),
           Text(

@@ -3,6 +3,7 @@ import '../presentation/screens/auth/get_started_screen.dart';
 import '../presentation/screens/auth/landing_screen.dart';
 import '../presentation/screens/auth/login_screen.dart';
 import '../presentation/screens/auth/register_screen.dart';
+import '../presentation/screens/auth/splash_screen.dart';
 import '../presentation/screens/home/home_screen.dart';
 import '../presentation/screens/research/submit_research_screen.dart';
 import '../presentation/screens/research/research_detail_screen.dart';
@@ -10,7 +11,8 @@ import '../data/models/research_model.dart';
 
 class AppRoutes {
   // Route names
-  static const String getStarted = '/';
+  static const String splash = '/';
+  static const String getStarted = '/get-started';
   static const String landing = '/landing';
   static const String login = '/login';
   static const String register = '/register';
@@ -21,6 +23,8 @@ class AppRoutes {
   // Route generator
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
+      case splash:
+        return MaterialPageRoute(builder: (_) => const SplashScreen());
       case getStarted:
         return MaterialPageRoute(builder: (_) => const GetStartedScreen());
       case landing:

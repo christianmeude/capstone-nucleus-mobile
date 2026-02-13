@@ -1,18 +1,75 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../data/models/research_model.dart';
 
-class ResearchDetailScreen extends StatelessWidget {
+// Web-specific imports
+import 'dart:ui_web' as ui_web;
+import 'dart:html' as html;
+
+class ResearchDetailScreen extends StatefulWidget {
   final ResearchModel paper;
 
   const ResearchDetailScreen({super.key, required this.paper});
 
-  void _openPdfViewer(BuildContext context) {
+  @override
+  State<ResearchDetailScreen> createState() => _ResearchDetailScreenState();
+}
+
+class _ResearchDetailScreenState extends State<ResearchDetailScreen> {
+  String? _iframeViewId;
+
+  ResearchModel get paper => widget.paper;
+
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb && paper.fileUrl != null) {
+      _registerIframeView();
+    }
+  }
+
+  void _registerIframeView() {
+    _iframeViewId = 'pdf-preview-${paper.id}';
+
+    ui_web.platformViewRegistry.registerViewFactory(_iframeViewId!, (
+      int viewId,
+    ) {
+      final iframe = html.IFrameElement()
+        ..src = paper.fileUrl!
+        ..style.border = 'none'
+        ..style.width = '100%'
+        ..style.height = '100%';
+      return iframe;
+    });
+  }
+
+  Future<void> _openPdfViewer(BuildContext context) async {
     if (paper.fileUrl == null) return;
 
+    // For web, open PDF in a new tab using browser's built-in PDF viewer
+    if (kIsWeb) {
+      final url = Uri.parse(paper.fileUrl!);
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Could not open PDF: ${paper.fileUrl}'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+      return;
+    }
+
+    // For mobile, use the PDF viewer screen
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -39,8 +96,8 @@ class ResearchDetailScreen extends StatelessWidget {
                 // Header Card
                 _buildHeaderCard(context),
 
-                // PDF Viewer Button
-                if (paper.fileUrl != null) _buildPdfViewerButton(context),
+                // Embedded PDF Preview
+                if (paper.fileUrl != null) _buildPdfPreview(context),
 
                 // Stats Section
                 _buildStatsSection(context),
@@ -61,21 +118,170 @@ class ResearchDetailScreen extends StatelessWidget {
           ),
         ],
       ),
-      // Floating Download Button
+      // Floating Full Screen Button
       floatingActionButton: paper.fileUrl != null
           ? FloatingActionButton.extended(
               onPressed: () => _openPdfViewer(context),
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               elevation: 4,
-              icon: const Icon(Icons.picture_as_pdf_rounded),
+              icon: const Icon(Icons.fullscreen_rounded),
               label: const Text(
-                'View PDF',
+                'Full Screen',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
             )
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+    );
+  }
+
+  Widget _buildPdfPreview(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section Header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.picture_as_pdf_rounded,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Document Preview',
+                      style: AppTextStyles.heading4.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      paper.fileName ?? 'PDF Document',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // PDF Preview Container
+          GestureDetector(
+            onTap: () => _openPdfViewer(context),
+            child: Container(
+              height: 500,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.borderLight, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(15),
+                child: Stack(
+                  children: [
+                    // PDF Viewer
+                    if (kIsWeb && _iframeViewId != null)
+                      HtmlElementView(viewType: _iframeViewId!)
+                    else if (!kIsWeb)
+                      SfPdfViewer.network(
+                        paper.fileUrl!,
+                        canShowScrollHead: false,
+                        canShowScrollStatus: false,
+                        enableDoubleTapZooming: false,
+                      ),
+
+                    // Tap to expand overlay
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.7),
+                            ],
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(25),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.fullscreen_rounded,
+                                    color: AppColors.primary,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Tap to view full screen',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -570,91 +776,6 @@ class ResearchDetailScreen extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildPdfViewerButton(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _openPdfViewer(context),
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.primary, AppColors.primaryLight],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.picture_as_pdf_rounded,
-                    color: Colors.white,
-                    size: 26,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'View Full Document',
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        paper.fileName ?? 'PDF Document',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: Colors.white.withOpacity(0.8),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.arrow_forward_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

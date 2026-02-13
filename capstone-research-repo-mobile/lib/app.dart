@@ -11,7 +11,7 @@ class ResearchHubApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'NUcleus Research Hub',
       theme: buildAppTheme(),
-      initialRoute: AppRoutes.landing,
+      initialRoute: AppRoutes.splash,
       onGenerateRoute: AppRoutes.generateRoute,
     );
   }

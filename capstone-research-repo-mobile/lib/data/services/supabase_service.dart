@@ -26,7 +26,10 @@ class SupabaseService {
   static bool get isLoggedIn => currentUser != null;
 
   /// Login with email and password
-  static Future<Map<String, dynamic>> login(String email, String password) async {
+  static Future<Map<String, dynamic>> login(
+    String email,
+    String password,
+  ) async {
     // Query users table directly (same as web app)
     final response = await client
         .from('users')
@@ -41,7 +44,7 @@ class SupabaseService {
     // Verify password using bcrypt
     final storedHash = response['password'] as String;
     final isPasswordValid = BCrypt.checkpw(password, storedHash);
-    
+
     if (!isPasswordValid) {
       throw Exception('Invalid email or password');
     }
@@ -53,10 +56,7 @@ class SupabaseService {
     await prefs.setString('user_role', response['role']);
     await prefs.setString('user_name', response['full_name'] ?? '');
 
-    return {
-      'user': response,
-      'message': 'Login successful',
-    };
+    return {'user': response, 'message': 'Login successful'};
   }
 
   /// Register a new user
@@ -79,13 +79,17 @@ class SupabaseService {
     }
 
     // Insert new user
-    final response = await client.from('users').insert({
-      'email': email,
-      'password': password, // Note: In production, hash this!
-      'full_name': fullName,
-      'role': role,
-      'program': program,
-    }).select().single();
+    final response = await client
+        .from('users')
+        .insert({
+          'email': email,
+          'password': password, // Note: In production, hash this!
+          'full_name': fullName,
+          'role': role,
+          'program': program,
+        })
+        .select()
+        .single();
 
     // Store user data
     final prefs = await SharedPreferences.getInstance();
@@ -94,10 +98,7 @@ class SupabaseService {
     await prefs.setString('user_role', response['role']);
     await prefs.setString('user_name', response['full_name'] ?? '');
 
-    return {
-      'user': response,
-      'message': 'Registration successful',
-    };
+    return {'user': response, 'message': 'Registration successful'};
   }
 
   /// Logout
@@ -113,7 +114,7 @@ class SupabaseService {
   static Future<UserModel?> getCurrentUser() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString('user_id');
-    
+
     if (userId == null) return null;
 
     final response = await client
@@ -152,9 +153,15 @@ class SupabaseService {
         .eq('author_id', userId)
         .order('created_at', ascending: false);
 
-    return (response as List)
-        .map((json) => ResearchModel.fromJson(json))
-        .toList();
+    return (response as List).map((json) {
+      try {
+        return ResearchModel.fromJson(json);
+      } catch (e) {
+        print('Error parsing research paper: $e');
+        print('JSON data: $json');
+        rethrow;
+      }
+    }).toList();
   }
 
   /// Get all published/approved papers
@@ -186,7 +193,7 @@ class SupabaseService {
     } catch (e) {
       // If join fails, try without join
       debugPrint('⚠️ Query with join failed, trying without: $e');
-      
+
       final response = await client
           .from('research_papers')
           .select('*')
@@ -229,22 +236,34 @@ class SupabaseService {
     if (userId == null) throw Exception('Not authenticated');
 
     // Upload file to Supabase Storage
-    final filePath = '$userId/${DateTime.now().millisecondsSinceEpoch}_$filename';
-    
-    await client.storage.from('research-papers').uploadBinary(
-      filePath,
-      fileBytes,
-      fileOptions: const FileOptions(contentType: 'application/pdf'),
-    );
+    final filePath =
+        '$userId/${DateTime.now().millisecondsSinceEpoch}_$filename';
+
+    await client.storage
+        .from('research-papers')
+        .uploadBinary(
+          filePath,
+          fileBytes,
+          fileOptions: const FileOptions(contentType: 'application/pdf'),
+        );
 
     // Get public URL
-    final fileUrl = client.storage.from('research-papers').getPublicUrl(filePath);
+    final fileUrl = client.storage
+        .from('research-papers')
+        .getPublicUrl(filePath);
 
     // Parse keywords
     List<String>? keywordsList;
     if (keywords != null && keywords.isNotEmpty) {
       keywordsList = keywords.split(',').map((k) => k.trim()).toList();
     }
+
+    // Determine initial status based on approval workflow:
+    // - If faculty is selected: pending_faculty (Level 1: Faculty Review)
+    // - If no faculty: pending_editor (Level 2: Staff/Editor Review)
+    final initialStatus = (facultyId != null && facultyId.isNotEmpty)
+        ? 'pending_faculty'
+        : 'pending_editor';
 
     // Insert paper record
     await client.from('research_papers').insert({
@@ -257,7 +276,7 @@ class SupabaseService {
       'file_url': fileUrl,
       'file_name': filename,
       'file_size': fileBytes.length,
-      'status': facultyId != null ? 'pending_faculty' : 'pending',
+      'status': initialStatus,
       'faculty_id': facultyId,
       'department': department,
     });
@@ -266,7 +285,7 @@ class SupabaseService {
   /// Track download
   static Future<void> trackDownload(String paperId) async {
     final userId = await getCurrentUserId();
-    
+
     await client.rpc('increment_download_count', params: {'row_id': paperId});
 
     if (userId != null) {
@@ -288,7 +307,9 @@ class SupabaseService {
   }
 
   /// Get faculty members
-  static Future<List<Map<String, dynamic>>> getFacultyMembers({String? department}) async {
+  static Future<List<Map<String, dynamic>>> getFacultyMembers({
+    String? department,
+  }) async {
     var query = client
         .from('users')
         .select('id, full_name, email, department')
@@ -339,11 +360,15 @@ class SupabaseService {
   }
 
   /// Approve research
-  static Future<void> approveResearch(String paperId, {String? comments}) async {
+  static Future<void> approveResearch(
+    String paperId, {
+    String? comments,
+  }) async {
     final userId = await getCurrentUserId();
     final userRole = await getCurrentUserRole();
-    
-    if (userId == null || userRole == null) throw Exception('Not authenticated');
+
+    if (userId == null || userRole == null)
+      throw Exception('Not authenticated');
 
     // Get current paper status
     final paper = await client
@@ -363,29 +388,37 @@ class SupabaseService {
       throw Exception('Invalid approval workflow');
     }
 
-    await client.from('research_papers').update({
-      'status': newStatus,
-      'published_date': newStatus == 'approved' ? DateTime.now().toIso8601String() : null,
-    }).eq('id', paperId);
+    await client
+        .from('research_papers')
+        .update({
+          'status': newStatus,
+          'published_date': newStatus == 'approved'
+              ? DateTime.now().toIso8601String()
+              : null,
+        })
+        .eq('id', paperId);
   }
 
   /// Reject research
   static Future<void> rejectResearch(String paperId, String reason) async {
-    await client.from('research_papers').update({
-      'status': 'rejected',
-      'rejection_reason': reason,
-    }).eq('id', paperId);
+    await client
+        .from('research_papers')
+        .update({'status': 'rejected', 'rejection_reason': reason})
+        .eq('id', paperId);
   }
 
   /// Request revision
   static Future<void> requestRevision(String paperId, String notes) async {
     final userRole = await getCurrentUserRole();
-    
-    await client.from('research_papers').update({
-      'status': 'revision_required',
-      'revision_notes': notes,
-      'last_reviewer_role': userRole,
-    }).eq('id', paperId);
+
+    await client
+        .from('research_papers')
+        .update({
+          'status': 'revision_required',
+          'revision_notes': notes,
+          'last_reviewer_role': userRole,
+        })
+        .eq('id', paperId);
   }
 
   // ==========================================
@@ -402,13 +435,61 @@ class SupabaseService {
 
     final response = await query.order('created_at', ascending: false);
 
-    return (response as List)
-        .map((json) => UserModel.fromJson(json))
-        .toList();
+    return (response as List).map((json) => UserModel.fromJson(json)).toList();
   }
 
   /// Delete user (admin only)
   static Future<void> deleteUser(String userId) async {
     await client.from('users').delete().eq('id', userId);
+  }
+
+  // ==========================================
+  // FILE UTILITIES
+  // ==========================================
+
+  /// Get a signed URL for a file (for private buckets)
+  /// Returns a URL that's valid for the specified duration
+  static Future<String> getSignedPdfUrl(String fileUrl) async {
+    try {
+      // Extract the file path from the public URL
+      // Public URL format: https://<project>.supabase.co/storage/v1/object/public/research-papers/<path>
+      final uri = Uri.parse(fileUrl);
+      final pathSegments = uri.pathSegments;
+
+      // Find the index of 'research-papers' bucket name
+      final bucketIndex = pathSegments.indexOf('research-papers');
+      if (bucketIndex == -1 || bucketIndex >= pathSegments.length - 1) {
+        // If we can't parse the URL, return the original
+        debugPrint('📄 Could not parse file path, using original URL');
+        return fileUrl;
+      }
+
+      // Get the file path after the bucket name
+      final filePath = pathSegments.sublist(bucketIndex + 1).join('/');
+      debugPrint('📄 Extracted file path: $filePath');
+
+      // Create a signed URL valid for 1 hour (3600 seconds)
+      final signedUrl = await client.storage
+          .from('research-papers')
+          .createSignedUrl(filePath, 3600);
+
+      debugPrint('📄 Generated signed URL successfully');
+      return signedUrl;
+    } catch (e) {
+      debugPrint('❌ Error generating signed URL: $e');
+      // Fall back to original URL if signing fails
+      return fileUrl;
+    }
+  }
+
+  /// Check if a file URL is accessible
+  static Future<bool> isFileAccessible(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      // Just verify the URL is valid
+      return uri.hasScheme && uri.host.isNotEmpty;
+    } catch (e) {
+      return false;
+    }
   }
 }

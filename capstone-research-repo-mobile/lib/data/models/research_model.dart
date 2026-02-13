@@ -47,33 +47,45 @@ class ResearchModel {
 
   factory ResearchModel.fromJson(Map<String, dynamic> json) {
     return ResearchModel(
-      id: json['id'] ?? '',
-      authorId: json['author_id'] ?? '',
-      title: json['title'] ?? '',
-      abstract: json['abstract'] ?? '',
-      keywords: json['keywords'] != null 
-          ? List<String>.from(json['keywords']) 
+      id: json['id']?.toString() ?? '',
+      authorId: json['author_id']?.toString() ?? '',
+      title: json['title']?.toString() ?? 'Untitled',
+      abstract: json['abstract']?.toString() ?? '',
+      keywords: json['keywords'] != null
+          ? (json['keywords'] is List
+                ? List<String>.from(
+                    json['keywords'].map((e) => e?.toString() ?? ''),
+                  )
+                : <String>[])
           : null,
-      category: json['category'] ?? '',
-      coAuthors: json['co_authors'],
-      fileUrl: json['file_url'],
-      fileName: json['file_name'],
-      fileSize: json['file_size'],
-      status: json['status'] ?? 'pending',
-      facultyId: json['faculty_id'],
-      department: json['department'],
-      revisionNotes: json['revision_notes'],
-      rejectionReason: json['rejection_reason'],
-      createdAt: json['created_at'] != null 
-          ? DateTime.parse(json['created_at']) 
+      category: json['category']?.toString() ?? '',
+      coAuthors: json['co_authors']?.toString(),
+      fileUrl: json['file_url']?.toString(),
+      fileName: json['file_name']?.toString(),
+      fileSize: json['file_size'] is int ? json['file_size'] : null,
+      status: json['status']?.toString() ?? 'pending',
+      facultyId: json['faculty_id']?.toString(),
+      department: json['department']?.toString(),
+      revisionNotes: json['revision_notes']?.toString(),
+      rejectionReason: json['rejection_reason']?.toString(),
+      createdAt: json['created_at'] != null
+          ? (json['created_at'] is DateTime
+                ? json['created_at']
+                : DateTime.tryParse(json['created_at'].toString()))
           : null,
-      publishedDate: json['published_date'] != null 
-          ? DateTime.parse(json['published_date']) 
+      publishedDate: json['published_date'] != null
+          ? (json['published_date'] is DateTime
+                ? json['published_date']
+                : DateTime.tryParse(json['published_date'].toString()))
           : null,
-      viewCount: json['view_count'] ?? 0,
-      downloadCount: json['download_count'] ?? 0,
-      authorName: json['users']?['full_name'] ?? json['author']?['full_name'],
-      authorEmail: json['users']?['email'] ?? json['author']?['email'],
+      viewCount: json['view_count'] is int ? json['view_count'] : 0,
+      downloadCount: json['download_count'] is int ? json['download_count'] : 0,
+      authorName:
+          json['users']?['full_name']?.toString() ??
+          json['author']?['full_name']?.toString(),
+      authorEmail:
+          json['users']?['email']?.toString() ??
+          json['author']?['email']?.toString(),
     );
   }
 
