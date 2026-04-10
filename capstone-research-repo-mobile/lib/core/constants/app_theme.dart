@@ -86,8 +86,8 @@ ThemeData buildAppTheme() {
     ),
   );
 
-  // 2. Apply Google Fonts (Poppins) to the entire text theme
+  // 2. Apply the same sans family used by the app text styles
   return baseTheme.copyWith(
-    textTheme: GoogleFonts.poppinsTextTheme(baseTheme.textTheme),
+    textTheme: GoogleFonts.plusJakartaSansTextTheme(baseTheme.textTheme),
   );
 }

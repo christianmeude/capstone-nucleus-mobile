@@ -18,6 +18,8 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
   String _selectedCategory = "All";
   final List<String> _categories = ["All", "Published", "Recent", "Popular"];
 
+  bool _showFilters = false;
+
   // Search functionality
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
@@ -32,14 +34,20 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(_onSearchTextChanged);
     _loadPapers();
   }
 
   @override
   void dispose() {
+    _searchController.removeListener(_onSearchTextChanged);
     _searchController.dispose();
     _searchFocus.dispose();
     super.dispose();
+  }
+
+  void _onSearchTextChanged() {
+    setState(() {});
   }
 
   Future<void> _loadPapers() async {
@@ -163,7 +171,7 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
 
   Widget _buildSearchHeader() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
       decoration: BoxDecoration(
         color: AppColors.surface,
         boxShadow: [
@@ -177,35 +185,36 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title Row
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Explore Research",
-                    style: AppTextStyles.heading3.copyWith(
-                      color: AppColors.primary,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Explore Research",
+                      style: AppTextStyles.heading3.copyWith(
+                        color: AppColors.primary,
+                        fontSize: 20,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    "${_papers.length} papers available",
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
+                    const SizedBox(height: 1),
+                    Text(
+                      "${_papers.length} papers available",
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              // Results indicator when searching
               if (_searchController.text.isNotEmpty)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(18),
                   ),
                   child: Text(
                     "${_filteredPapers.length} found",
@@ -218,110 +227,147 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
             ],
           ),
           
-          const SizedBox(height: 16),
-
-          // Modern Search Field
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.borderLight, width: 1.5),
-            ),
-            child: TextField(
-              controller: _searchController,
-              focusNode: _searchFocus,
-              onChanged: _onSearchChanged,
-              style: AppTextStyles.bodyMedium,
-              decoration: InputDecoration(
-                hintText: "Search papers, authors, keywords...",
-                hintStyle: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textLight,
-                ),
-                prefixIcon: Container(
-                  padding: const EdgeInsets.all(12),
-                  child: Icon(
-                    Icons.search_rounded,
-                    color: AppColors.textSecondary,
-                    size: 24,
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.borderLight, width: 1),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    focusNode: _searchFocus,
+                    onChanged: _onSearchChanged,
+                    style: AppTextStyles.bodyMedium,
+                    decoration: InputDecoration(
+                      hintText: "Search papers, authors, keywords...",
+                      hintStyle: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textLight,
+                      ),
+                      prefixIcon: Container(
+                        padding: const EdgeInsets.all(10),
+                        child: Icon(
+                          Icons.search_rounded,
+                          color: AppColors.textSecondary,
+                          size: 22,
+                        ),
+                      ),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              onPressed: _clearSearch,
+                              icon: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.textLight.withOpacity(0.2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.close_rounded,
+                                  color: AppColors.textSecondary,
+                                  size: 16,
+                                ),
+                              ),
+                              visualDensity: VisualDensity.compact,
+                              splashRadius: 18,
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 13,
+                      ),
+                    ),
                   ),
                 ),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        onPressed: _clearSearch,
-                        icon: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: AppColors.textLight.withOpacity(0.2),
-                            shape: BoxShape.circle,
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _showFilters = !_showFilters;
+                  });
+                },
+                icon: Icon(
+                  Icons.tune_rounded,
+                  color: _showFilters ? AppColors.primary : AppColors.textSecondary,
+                  size: 22,
+                ),
+                tooltip: 'Filters',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints.tightFor(
+                  width: 42,
+                  height: 42,
+                ),
+                visualDensity: VisualDensity.compact,
+                splashRadius: 18,
+              ),
+            ],
+          ),
+
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  border: Border.all(color: AppColors.borderLight),
+                ),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      ..._searchFilters.map((filter) {
+                        final isSelected = _selectedSearchFilter == filter;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: _buildFilterChip(
+                            label: filter,
+                            isSelected: isSelected,
+                            isPrimary: true,
+                            onTap: () {
+                              setState(() => _selectedSearchFilter = filter);
+                              _applyFilters();
+                            },
                           ),
-                          child: Icon(
-                            Icons.close_rounded,
-                            color: AppColors.textSecondary,
-                            size: 16,
+                        );
+                      }),
+                      Container(
+                        height: 22,
+                        width: 1,
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        color: AppColors.borderLight,
+                      ),
+                      ..._categories.map((category) {
+                        final isSelected = _selectedCategory == category;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: _buildFilterChip(
+                            label: category,
+                            isSelected: isSelected,
+                            isPrimary: false,
+                            onTap: () {
+                              setState(() => _selectedCategory = category);
+                              _applyFilters();
+                            },
                           ),
-                        ),
-                      )
-                    : null,
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
+                        );
+                      }),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-
-          const SizedBox(height: 14),
-
-          // Combined Filter Row
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                // Search filters
-                ..._searchFilters.map((filter) {
-                  final isSelected = _selectedSearchFilter == filter;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: _buildFilterChip(
-                      label: filter,
-                      isSelected: isSelected,
-                      isPrimary: true,
-                      onTap: () {
-                        setState(() => _selectedSearchFilter = filter);
-                        _applyFilters();
-                      },
-                    ),
-                  );
-                }),
-                
-                // Divider
-                Container(
-                  height: 24,
-                  width: 1,
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  color: AppColors.borderLight,
-                ),
-                
-                // Category filters
-                ..._categories.map((category) {
-                  final isSelected = _selectedCategory == category;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: _buildFilterChip(
-                      label: category,
-                      isSelected: isSelected,
-                      isPrimary: false,
-                      onTap: () {
-                        setState(() => _selectedCategory = category);
-                        _applyFilters();
-                      },
-                    ),
-                  );
-                }),
-              ],
+            crossFadeState: _showFilters
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 180),
             ),
-          ),
         ],
       ),
     );
@@ -337,7 +383,10 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: EdgeInsets.symmetric(
+          horizontal: isPrimary ? 11 : 10,
+          vertical: isPrimary ? 6 : 7,
+        ),
         decoration: BoxDecoration(
           color: isSelected 
               ? (isPrimary ? AppColors.primary : AppColors.accent) 
@@ -347,7 +396,7 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
             color: isSelected 
                 ? (isPrimary ? AppColors.primary : AppColors.accent)
                 : AppColors.borderLight,
-            width: 1.5,
+            width: 1,
           ),
         ),
         child: Text(
@@ -357,7 +406,7 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
                 ? (isPrimary ? Colors.white : AppColors.primary)
                 : AppColors.textSecondary,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-            fontSize: 13,
+            fontSize: 11,
           ),
         ),
       ),

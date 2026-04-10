@@ -167,10 +167,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildAppBar() {
     return Container(
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 12,
+        top: MediaQuery.of(context).padding.top + 10,
         left: 20,
         right: 20,
-        bottom: 16,
+        bottom: 14,
       ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -183,15 +183,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         children: [
           // NU Logo with subtle animation
           Container(
-            width: 44,
-            height: 44,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  blurRadius: 8,
+                  color: Colors.black.withOpacity(0.12),
+                  blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
               ],
@@ -202,14 +202,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 style: TextStyle(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w900,
-                  fontSize: 16,
+                  fontSize: 15,
                   letterSpacing: -0.5,
                 ),
               ),
             ),
           ),
 
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
 
           // Greeting with improved typography
           Expanded(
@@ -221,7 +221,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   _greeting,
                   style: AppTextStyles.bodySmall.copyWith(
                     color: Colors.white.withOpacity(0.7),
-                    fontSize: 12,
+                    fontSize: 11,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -230,7 +230,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ? "..."
                       : _currentUser?.fullName.split(' ')[0] ?? 'User',
                   style: AppTextStyles.heading4.copyWith(
-                    fontSize: 20,
+                    fontSize: 19,
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
                   ),
@@ -246,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             showBadge: true,
           ),
 
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
 
           // Logout with tooltip
           _buildAppBarButton(
@@ -267,23 +267,38 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       color: Colors.transparent,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
-          width: 42,
-          height: 42,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(12),
+            color: Colors.white.withOpacity(0.14),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withOpacity(0.12),
               width: 1,
             ),
           ),
           child: showBadge
-              ? Badge(
-                  smallSize: 9,
-                  backgroundColor: AppColors.accent,
-                  child: Icon(icon, color: Colors.white, size: 22),
+              ? Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Center(
+                      child: Icon(icon, color: Colors.white, size: 22),
+                    ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        width: 9,
+                        height: 9,
+                        decoration: const BoxDecoration(
+                          color: AppColors.accent,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ],
                 )
               : Icon(icon, color: Colors.white, size: 22),
         ),
@@ -331,27 +346,33 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildBottomNav() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(0, Icons.explore_rounded, Icons.explore_outlined, "Explore"),
-              _buildNavItem(1, Icons.folder_rounded, Icons.folder_outlined, "My Papers"),
-              _buildNavItem(2, Icons.analytics_rounded, Icons.analytics_outlined, "Analytics"),
-            ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.borderLight),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 18,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(0, Icons.explore_rounded, Icons.explore_outlined, "Explore"),
+                _buildNavItem(1, Icons.folder_rounded, Icons.folder_outlined, "My Papers"),
+                _buildNavItem(2, Icons.analytics_rounded, Icons.analytics_outlined, "Analytics"),
+              ],
+            ),
           ),
         ),
       ),
@@ -366,10 +387,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          color: isSelected ? AppColors.primary.withOpacity(0.09) : Colors.transparent,
+          borderRadius: BorderRadius.circular(18),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -377,15 +398,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             Icon(
               isSelected ? activeIcon : inactiveIcon,
               color: isSelected ? AppColors.primary : AppColors.textLight,
-              size: 24,
+              size: 23,
             ),
             if (isSelected) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Text(
                 label,
                 style: AppTextStyles.label.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w600,
+                  fontSize: 12,
                 ),
               ),
             ],
