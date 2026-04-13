@@ -414,17 +414,16 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
   }
 
   Widget _buildLoadingState() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: List.generate(
-          5,
-          (index) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: const ShimmerBox(height: 88, borderRadius: 12),
-          ),
-        ),
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
       ),
+      itemCount: 5,
+      itemBuilder: (context, index) {
+        return const ShimmerBox(height: 88, borderRadius: 12);
+      },
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
     );
   }
 
