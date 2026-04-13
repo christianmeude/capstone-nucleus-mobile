@@ -73,6 +73,10 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
           return _buildLoadingState();
         }
 
+        if (snapshot.hasError) {
+          return _buildErrorState(snapshot.error.toString());
+        }
+
         final allPapers = snapshot.data ?? [];
         final filteredPapers = _filterPapers(allPapers);
 
@@ -140,6 +144,51 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String message) {
+    final clean = message.replaceFirst('Exception: ', '');
+
+    return RefreshIndicator(
+      onRefresh: () async => setState(() {}),
+      color: AppColors.primary,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 20),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.error.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.error.withOpacity(0.4)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Unable to load your papers', style: AppTextStyles.labelMedium),
+                  const SizedBox(height: 8),
+                  Text(
+                    clean,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 80),
+          ],
+        ),
       ),
     );
   }

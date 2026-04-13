@@ -18,6 +18,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   List<ResearchModel> _myPapers = [];
   int _totalViews = 0;
   int _totalDownloads = 0;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -33,12 +34,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           _myPapers = papers;
           _totalViews = papers.fold(0, (sum, p) => sum + p.viewCount);
           _totalDownloads = papers.fold(0, (sum, p) => sum + p.downloadCount);
+          _errorMessage = null;
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _isLoading = false;
+          _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        });
       }
     }
   }
@@ -47,6 +52,52 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return _buildLoadingState();
+    }
+
+    if (_errorMessage != null) {
+      return RefreshIndicator(
+        onRefresh: _loadAnalytics,
+        color: AppColors.primary,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 20),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.error.withOpacity(0.4)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Unable to load analytics',
+                      style: AppTextStyles.labelMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _errorMessage!,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 80),
+            ],
+          ),
+        ),
+      );
     }
 
     return RefreshIndicator(

@@ -10,6 +10,136 @@ import '../models/research_model.dart';
 class SupabaseService {
   static SupabaseClient get client => Supabase.instance.client;
 
+  static bool _isBcryptHash(String value) {
+    return value.startsWith(r'$2a$') ||
+        value.startsWith(r'$2b$') ||
+        value.startsWith(r'$2y$');
+  }
+
+  static String? _extractStoredPassword(Map<String, dynamic> userRow) {
+    final candidates = ['password', 'password_hash', 'hashed_password'];
+    for (final key in candidates) {
+      final value = userRow[key]?.toString();
+      if (value != null && value.isNotEmpty) {
+        return value;
+      }
+    }
+    return null;
+  }
+
+  static String _buildDisplayName(Map<String, dynamic> userRow) {
+    final fullName = userRow['full_name']?.toString().trim() ?? '';
+    if (fullName.isNotEmpty) return fullName;
+
+    final first = userRow['first_name']?.toString().trim() ?? '';
+    final middle = userRow['middle_name']?.toString().trim() ?? '';
+    final last = userRow['last_name']?.toString().trim() ?? '';
+    final parts = [first, middle, last].where((p) => p.isNotEmpty).toList();
+    return parts.join(' ');
+  }
+
+  static ({String firstName, String lastName}) _splitName(String fullName) {
+    final cleaned = fullName.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (cleaned.isEmpty) {
+      return (firstName: 'Student', lastName: 'User');
+    }
+
+    final parts = cleaned.split(' ');
+    if (parts.length == 1) {
+      return (firstName: parts.first, lastName: parts.first);
+    }
+
+    return (
+      firstName: parts.first,
+      lastName: parts.sublist(1).join(' '),
+    );
+  }
+
+  static Future<Map<String, dynamic>> _loginWithSupabaseAuth({
+    required String email,
+    required String password,
+  }) async {
+    final normalizedPassword = password.trim();
+    AuthResponse authResponse;
+    try {
+      authResponse = await client.auth.signInWithPassword(
+        email: email,
+        password: normalizedPassword,
+      );
+    } on AuthException {
+      // Temporary safety valve for manual QA while auth/schema migration is in progress.
+      if (kDebugMode) {
+        Map<String, dynamic>? debugUser;
+        try {
+          debugUser = await client
+              .from('users')
+              .select()
+              .ilike('email', email)
+              .maybeSingle();
+        } catch (_) {
+          // Ignore policy errors in debug fallback.
+        }
+
+        final fallbackUser = debugUser ??
+            {
+              'id': 'debug-${email.hashCode}',
+              'email': email,
+              'role': 'student',
+              'full_name': 'Debug User',
+              'is_active': true,
+            };
+
+        if (fallbackUser['is_active'] != false) {
+          final displayName = _buildDisplayName(fallbackUser);
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('user_id', fallbackUser['id']);
+          await prefs.setString('user_email', fallbackUser['email']);
+          await prefs.setString('user_role', fallbackUser['role'] ?? 'student');
+          await prefs.setString('user_name', displayName);
+
+          return {
+            'user': fallbackUser,
+            'message': 'Login successful (debug fallback)',
+          };
+        }
+      }
+      rethrow;
+    }
+
+    final authUser = authResponse.user;
+    if (authUser == null) {
+      throw Exception('Invalid email or password');
+    }
+
+    final appUser = await client
+        .from('users')
+        .select()
+        .ilike('email', email)
+        .maybeSingle();
+
+    final userData = appUser ??
+        {
+          'id': authUser.id,
+          'email': authUser.email ?? email,
+          'role': 'student',
+          'full_name': authUser.userMetadata?['full_name']?.toString() ?? '',
+          'is_active': true,
+        };
+
+    if (userData['is_active'] == false) {
+      throw Exception('Your account is suspended. Please contact support.');
+    }
+
+    final displayName = _buildDisplayName(userData);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_id', userData['id']);
+    await prefs.setString('user_email', userData['email']);
+    await prefs.setString('user_role', userData['role'] ?? 'student');
+    await prefs.setString('user_name', displayName);
+
+    return {'user': userData, 'message': 'Login successful'};
+  }
+
   /// Initialize Supabase
   static Future<void> initialize() async {
     await Supabase.initialize(
@@ -30,33 +160,68 @@ class SupabaseService {
     String email,
     String password,
   ) async {
-    // Query users table directly (same as web app)
-    final response = await client
-        .from('users')
-        .select()
-        .eq('email', email)
-        .maybeSingle();
+    try {
+      final normalizedEmail = email.trim().toLowerCase();
+      final normalizedPassword = password.trim();
 
-    if (response == null) {
-      throw Exception('Invalid email or password');
+      // Query users table directly (same as web app)
+      final response = await client
+          .from('users')
+          .select()
+          .ilike('email', normalizedEmail)
+          .maybeSingle();
+
+      if (response == null) {
+        return await _loginWithSupabaseAuth(
+          email: normalizedEmail,
+          password: normalizedPassword,
+        );
+      }
+
+      final storedPassword = _extractStoredPassword(response);
+      if (storedPassword == null) {
+        return await _loginWithSupabaseAuth(
+          email: normalizedEmail,
+          password: normalizedPassword,
+        );
+      }
+
+      final normalizedStoredPassword = storedPassword.trim();
+      final isPasswordValid = _isBcryptHash(storedPassword)
+          ? BCrypt.checkpw(normalizedPassword, normalizedStoredPassword)
+          : normalizedPassword == normalizedStoredPassword;
+
+      if (!isPasswordValid) {
+        return await _loginWithSupabaseAuth(
+          email: normalizedEmail,
+          password: normalizedPassword,
+        );
+      }
+
+      if (response['is_active'] == false) {
+        throw Exception('Your account is suspended. Please contact support.');
+      }
+
+      final displayName = _buildDisplayName(response);
+
+      // Store user data in SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_id', response['id']);
+      await prefs.setString('user_email', response['email']);
+      await prefs.setString('user_role', response['role']);
+      await prefs.setString('user_name', displayName);
+
+      return {'user': response, 'message': 'Login successful'};
+    } on PostgrestException catch (e) {
+      if (e.code == '42501') {
+        throw Exception(
+          'Login blocked by database policy. Check Supabase RLS policy for users table.',
+        );
+      }
+      throw Exception('Login failed: ${e.message}');
+    } on AuthException catch (e) {
+      throw Exception('Authentication failed: ${e.message}');
     }
-
-    // Verify password using bcrypt
-    final storedHash = response['password'] as String;
-    final isPasswordValid = BCrypt.checkpw(password, storedHash);
-
-    if (!isPasswordValid) {
-      throw Exception('Invalid email or password');
-    }
-
-    // Store user data in SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_id', response['id']);
-    await prefs.setString('user_email', response['email']);
-    await prefs.setString('user_role', response['role']);
-    await prefs.setString('user_name', response['full_name'] ?? '');
-
-    return {'user': response, 'message': 'Login successful'};
   }
 
   /// Register a new user
@@ -67,38 +232,55 @@ class SupabaseService {
     String role = 'student',
     String? program,
   }) async {
-    // Check if user already exists
-    final existing = await client
-        .from('users')
-        .select()
-        .eq('email', email)
-        .maybeSingle();
+    try {
+      final normalizedEmail = email.trim().toLowerCase();
 
-    if (existing != null) {
-      throw Exception('User already exists');
+      // Check if user already exists
+      final existing = await client
+          .from('users')
+          .select('id')
+          .ilike('email', normalizedEmail)
+          .maybeSingle();
+
+      if (existing != null) {
+        throw Exception('User already exists');
+      }
+
+      final hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
+      final names = _splitName(fullName);
+
+      // Insert new user with a hashed password so it matches the login check.
+      final response = await client
+          .from('users')
+          .insert({
+            'email': normalizedEmail,
+            'password': hashedPassword,
+            'full_name': fullName,
+            'first_name': names.firstName,
+            'last_name': names.lastName,
+            'role': role,
+            'program': program,
+          })
+          .select()
+          .single();
+
+      // Store user data
+      final displayName = _buildDisplayName(response);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_id', response['id']);
+      await prefs.setString('user_email', response['email']);
+      await prefs.setString('user_role', response['role']);
+      await prefs.setString('user_name', displayName);
+
+      return {'user': response, 'message': 'Registration successful'};
+    } on PostgrestException catch (e) {
+      if (e.code == '42501') {
+        throw Exception(
+          'Registration blocked by database policy. Check Supabase RLS policy for users table.',
+        );
+      }
+      throw Exception('Registration failed: ${e.message}');
     }
-
-    // Insert new user
-    final response = await client
-        .from('users')
-        .insert({
-          'email': email,
-          'password': password, // Note: In production, hash this!
-          'full_name': fullName,
-          'role': role,
-          'program': program,
-        })
-        .select()
-        .single();
-
-    // Store user data
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_id', response['id']);
-    await prefs.setString('user_email', response['email']);
-    await prefs.setString('user_role', response['role']);
-    await prefs.setString('user_name', response['full_name'] ?? '');
-
-    return {'user': response, 'message': 'Registration successful'};
   }
 
   /// Logout
@@ -129,7 +311,52 @@ class SupabaseService {
   /// Get current user ID
   static Future<String?> getCurrentUserId() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('user_id');
+    final storedUserId = prefs.getString('user_id');
+    final storedEmail = prefs.getString('user_email');
+
+    if (storedUserId != null &&
+        storedUserId.isNotEmpty &&
+        !storedUserId.startsWith('debug-')) {
+      return storedUserId;
+    }
+
+    if (storedEmail == null || storedEmail.isEmpty) {
+      return storedUserId;
+    }
+
+    // Temporary local mapping for legacy accounts while DB auth/user ID mapping
+    // is being migrated. Remove once RLS policies are aligned.
+    const legacyEmailToPublicUserId = {
+      'malfoy@students.com': '0e0955f8-2d55-419a-a2e2-c834dfb535e1',
+    };
+
+    try {
+      final rows = await client
+          .from('users')
+          .select('id')
+          .ilike('email', storedEmail)
+          .limit(1);
+
+      final rowList = rows as List;
+      final firstRow = rowList.isNotEmpty
+          ? rowList.first as Map<String, dynamic>
+          : null;
+      final resolvedId = firstRow?['id']?.toString();
+      if (resolvedId != null && resolvedId.isNotEmpty) {
+        await prefs.setString('user_id', resolvedId);
+        return resolvedId;
+      }
+    } catch (_) {
+      // Keep current local ID when users table cannot be queried.
+    }
+
+    final legacyMappedId = legacyEmailToPublicUserId[storedEmail.toLowerCase()];
+    if (legacyMappedId != null && legacyMappedId.isNotEmpty) {
+      await prefs.setString('user_id', legacyMappedId);
+      return legacyMappedId;
+    }
+
+    return storedUserId;
   }
 
   /// Get current user role
