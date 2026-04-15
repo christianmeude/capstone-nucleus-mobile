@@ -263,18 +263,13 @@ class _HomeScreenState extends State<HomeScreen> {
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.14),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.12),
-              width: 1,
-            ),
+            border: Border.all(color: Colors.white.withOpacity(0.12), width: 1),
           ),
           child: showBadge
               ? Stack(
                   alignment: Alignment.center,
                   children: [
-                    Center(
-                      child: Icon(icon, color: Colors.white, size: 22),
-                    ),
+                    Center(child: Icon(icon, color: Colors.white, size: 22)),
                     Positioned(
                       top: 8,
                       right: 8,
@@ -312,9 +307,7 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         icon: Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
@@ -344,23 +337,91 @@ class _HomeScreenState extends State<HomeScreen> {
           border: Border.all(color: AppColors.borderLight),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 18,
-              offset: const Offset(0, -2),
+              color: AppColors.primary.withOpacity(0.14),
+              blurRadius: 22,
+              offset: const Offset(0, 8),
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: SafeArea(
           top: false,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(0, Icons.explore_rounded, Icons.explore_outlined, "Explore"),
-                _buildNavItem(1, Icons.folder_rounded, Icons.folder_outlined, "My Papers"),
-                _buildNavItem(2, Icons.analytics_rounded, Icons.analytics_outlined, "Analytics"),
-              ],
+          child: SizedBox(
+            height: 68,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  const tabCount = 3;
+                  final slotWidth = constraints.maxWidth / tabCount;
+                  final selectorWidth = slotWidth - 10;
+                  final selectorLeft =
+                      (_currentIndex * slotWidth) +
+                      ((slotWidth - selectorWidth) / 2);
+
+                  return Stack(
+                    children: [
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOutCubic,
+                        left: selectorLeft,
+                        top: 0,
+                        child: Container(
+                          width: selectorWidth,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.16),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.22),
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withOpacity(0.10),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildNavItem(
+                              0,
+                              Icons.explore_rounded,
+                              Icons.explore_outlined,
+                              "Explore",
+                            ),
+                          ),
+                          Expanded(
+                            child: _buildNavItem(
+                              1,
+                              Icons.folder_rounded,
+                              Icons.folder_outlined,
+                              "My Papers",
+                            ),
+                          ),
+                          Expanded(
+                            child: _buildNavItem(
+                              2,
+                              Icons.analytics_rounded,
+                              Icons.analytics_outlined,
+                              "Analytics",
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -368,38 +429,71 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildNavItem(int index, IconData activeIcon, IconData inactiveIcon, String label) {
+  Widget _buildNavItem(
+    int index,
+    IconData activeIcon,
+    IconData inactiveIcon,
+    String label,
+  ) {
     final isSelected = _currentIndex == index;
 
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
       behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.09) : Colors.transparent,
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Row(
+      child: Center(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(
-              isSelected ? activeIcon : inactiveIcon,
-              color: isSelected ? AppColors.primary : AppColors.textLight,
-              size: 23,
-            ),
-            if (isSelected) ...[
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: AppTextStyles.label.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
+            AnimatedSlide(
+              offset: isSelected ? Offset.zero : const Offset(0, 0.06),
+              duration: const Duration(milliseconds: 260),
+              curve: Curves.easeOutCubic,
+              child: AnimatedScale(
+                scale: isSelected ? 1.06 : 1.0,
+                duration: const Duration(milliseconds: 260),
+                curve: Curves.easeOutCubic,
+                child: Icon(
+                  isSelected ? activeIcon : inactiveIcon,
+                  color: isSelected ? AppColors.primary : AppColors.textLight,
+                  size: 23,
                 ),
               ),
-            ],
+            ),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 240),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (child, animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: SizeTransition(
+                    sizeFactor: animation,
+                    axis: Axis.vertical,
+                    axisAlignment: -1,
+                    child: child,
+                  ),
+                );
+              },
+              child: isSelected
+                  ? Center(
+                      key: ValueKey('label_$index'),
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          label,
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.label.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    )
+                  : const SizedBox(key: ValueKey('label_hidden'), height: 0),
+            ),
           ],
         ),
       ),
