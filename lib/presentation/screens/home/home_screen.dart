@@ -15,26 +15,15 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   UserModel? _currentUser;
   bool _isLoading = true;
-  late AnimationController _fabController;
 
   @override
   void initState() {
     super.initState();
-    _fabController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 200),
-    );
     _loadUserData();
-  }
-
-  @override
-  void dispose() {
-    _fabController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadUserData() async {
@@ -159,7 +148,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
         ],
       ),
-      floatingActionButton: _currentIndex == 0 ? _buildFAB() : null,
+      floatingActionButton: _buildFAB(),
       bottomNavigationBar: _buildBottomNav(),
     );
   }
