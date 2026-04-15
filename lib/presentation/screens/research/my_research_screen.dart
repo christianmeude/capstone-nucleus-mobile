@@ -291,14 +291,14 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
   Widget _buildSearchBar() {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.borderLight),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: AppColors.primary.withOpacity(0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -314,18 +314,19 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
           hintText: 'Search by title, author, keywords...',
           hintStyle: AppTextStyles.bodyMedium.copyWith(
             color: AppColors.textLight,
+            height: 1.1,
           ),
           prefixIcon: Icon(
             Icons.search_rounded,
             color: AppColors.textLight,
-            size: 22,
+            size: 20,
           ),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
                   icon: Icon(
                     Icons.clear_rounded,
                     color: AppColors.textLight,
-                    size: 20,
+                    size: 18,
                   ),
                   onPressed: () {
                     setState(() {
@@ -338,7 +339,7 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
-            vertical: 14,
+            vertical: 16,
           ),
         ),
       ),
@@ -379,19 +380,21 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
                   _selectedFilter = filter;
                 });
               },
-              backgroundColor: AppColors.surface,
-              selectedColor: chipColor.withOpacity(0.15),
+              backgroundColor: AppColors.surfaceLight,
+              selectedColor: chipColor.withOpacity(0.12),
               checkmarkColor: chipColor,
-              labelStyle: AppTextStyles.bodySmall.copyWith(
+              labelStyle: AppTextStyles.labelMedium.copyWith(
                 color: isSelected ? chipColor : AppColors.textSecondary,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               ),
               side: BorderSide(
-                color: isSelected ? chipColor : AppColors.border,
+                color: isSelected ? chipColor : AppColors.borderLight,
                 width: isSelected ? 1.5 : 1,
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 2),
               showCheckmark: true,
+              shape: const StadiumBorder(),
             ),
           );
         }).toList(),
@@ -405,10 +408,19 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
         padding: const EdgeInsets.only(top: 60),
         child: Column(
           children: [
-            Icon(
-              Icons.description_outlined,
-              size: 48,
-              color: AppColors.textLight,
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceLight,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.borderLight),
+              ),
+              child: const Icon(
+                Icons.description_outlined,
+                size: 30,
+                color: AppColors.textLight,
+              ),
             ),
             const SizedBox(height: 16),
             Text("No Submissions Yet", style: AppTextStyles.heading4),
@@ -433,10 +445,19 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
         padding: const EdgeInsets.only(top: 60),
         child: Column(
           children: [
-            Icon(
-              Icons.search_off_rounded,
-              size: 48,
-              color: AppColors.textLight,
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceLight,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.borderLight),
+              ),
+              child: const Icon(
+                Icons.search_off_rounded,
+                size: 30,
+                color: AppColors.textLight,
+              ),
             ),
             const SizedBox(height: 16),
             Text("No Results Found", style: AppTextStyles.heading4),
@@ -485,12 +506,12 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
+                    horizontal: 12,
+                    vertical: 5,
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     '${papers.length}',
@@ -541,8 +562,9 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
   Widget _buildViewToggle() {
     return Container(
       decoration: BoxDecoration(
+        color: AppColors.surfaceLight,
         border: Border.all(color: AppColors.borderLight, width: 1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         children: [
@@ -570,17 +592,17 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
       onTap: () => setState(() => _viewMode = mode),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withOpacity(0.1)
+              ? AppColors.primary.withOpacity(0.12)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(
           icon,
           color: isSelected ? AppColors.primary : AppColors.textLight,
-          size: 20,
+          size: 19,
         ),
       ),
     );
@@ -603,26 +625,40 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        gradient: LinearGradient(
+          colors: [AppColors.surface, AppColors.surfaceLight],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.12)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.08),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: color, size: 18),
+            child: Icon(icon, color: color, size: 17),
           ),
           const SizedBox(height: 8),
           Text(
             count.toString(),
-            style: AppTextStyles.heading4.copyWith(fontWeight: FontWeight.w700),
+            style: AppTextStyles.heading4.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
           ),
           const SizedBox(height: 2),
           Text(

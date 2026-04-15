@@ -255,9 +255,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.borderLight),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -329,12 +336,26 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.borderLight),
       ),
       child: Column(
         children: [
-          Icon(Icons.analytics_outlined, size: 40, color: AppColors.textLight),
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.borderLight),
+            ),
+            child: const Icon(
+              Icons.analytics_outlined,
+              size: 30,
+              color: AppColors.textLight,
+            ),
+          ),
           const SizedBox(height: 12),
           Text("No Data Yet", style: AppTextStyles.labelMedium),
           const SizedBox(height: 4),
@@ -369,27 +390,54 @@ class _AnalyticsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [color, color.withOpacity(0.86)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.22),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Icon(icon, color: Colors.white, size: 24),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: AppTextStyles.display.copyWith(
-              color: Colors.white,
-              fontSize: 28,
+          Positioned(
+            right: -20,
+            top: -20,
+            child: Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            title,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: Colors.white.withOpacity(0.8),
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: Colors.white, size: 24),
+              const SizedBox(height: 12),
+              Text(
+                value,
+                style: AppTextStyles.display.copyWith(
+                  color: Colors.white,
+                  fontSize: 28,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                title,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: Colors.white.withOpacity(0.82),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -414,49 +462,55 @@ class _StatusBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final progress = total > 0 ? count / total : 0.0;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              label,
-              style: AppTextStyles.bodySmall.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  label,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  "$count ${count == 1 ? 'paper' : 'papers'}",
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
             ),
-            Text(
-              "$count ${count == 1 ? 'paper' : 'papers'}",
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
+            const SizedBox(height: 8),
+            Stack(
+              children: [
+                Container(
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 800),
+                  curve: Curves.easeOutCubic,
+                  height: 10,
+                  width: constraints.maxWidth * progress,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [color, color.withOpacity(0.82)],
+                    ),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ],
             ),
           ],
-        ),
-        const SizedBox(height: 8),
-        Stack(
-          children: [
-            Container(
-              height: 8,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 800),
-              curve: Curves.easeOutCubic,
-              height: 8,
-              width: (MediaQuery.of(context).size.width - 80) * progress,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-          ],
-        ),
-      ],
+        );
+      },
     );
   }
 }
@@ -474,24 +528,35 @@ class _PaperPerformanceCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.borderLight),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
           // Rank
           Container(
-            width: 32,
-            height: 32,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
-              color: rank <= 3 ? AppColors.accent : AppColors.surfaceVariant,
-              borderRadius: BorderRadius.circular(8),
+              color: rank <= 3
+                  ? AppColors.accent.withOpacity(0.16)
+                  : AppColors.surfaceVariant,
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Center(
               child: Text(
                 "#$rank",
                 style: AppTextStyles.caption.copyWith(
-                  color: rank <= 3 ? Colors.white : AppColors.textSecondary,
+                  color: rank <= 3
+                      ? AppColors.primaryDark
+                      : AppColors.textSecondary,
                   fontWeight: FontWeight.w700,
                 ),
               ),

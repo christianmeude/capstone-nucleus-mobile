@@ -204,6 +204,13 @@ class _HomeScreenState extends State<HomeScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryDark.withOpacity(0.18),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -295,14 +302,14 @@ class _HomeScreenState extends State<HomeScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          width: 40,
-          height: 40,
+          width: 42,
+          height: 42,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.14),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withOpacity(0.12), width: 1),
+            color: Colors.white.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withOpacity(0.10), width: 1),
           ),
           child: badgeCount > 0 || showBadge
               ? Stack(
@@ -363,14 +370,14 @@ class _HomeScreenState extends State<HomeScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => Navigator.pushNamed(context, AppRoutes.guide),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          width: 40,
-          height: 40,
+          width: 42,
+          height: 42,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.14),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withOpacity(0.12), width: 1),
+            color: Colors.white.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withOpacity(0.10), width: 1),
           ),
           child: Center(
             child: const Icon(
@@ -430,12 +437,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ],
       child: Container(
-        width: 40,
-        height: 40,
+        width: 42,
+        height: 42,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.14),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withOpacity(0.12), width: 1),
+          color: Colors.white.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.10), width: 1),
         ),
         child: const Icon(
           Icons.more_vert_rounded,
@@ -493,28 +500,28 @@ class _HomeScreenState extends State<HomeScreen> {
           border: Border.all(color: AppColors.borderLight),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.14),
-              blurRadius: 22,
+              color: AppColors.primary.withOpacity(0.10),
+              blurRadius: 20,
               offset: const Offset(0, 8),
             ),
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: SafeArea(
           top: false,
           child: SizedBox(
-            height: 68,
+            height: 70,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   const tabCount = 3;
                   final slotWidth = constraints.maxWidth / tabCount;
-                  final selectorWidth = slotWidth - 10;
+                  final selectorWidth = slotWidth - 14;
                   final selectorLeft =
                       (_currentIndex * slotWidth) +
                       ((slotWidth - selectorWidth) / 2);
@@ -528,18 +535,18 @@ class _HomeScreenState extends State<HomeScreen> {
                         top: 0,
                         child: Container(
                           width: selectorWidth,
-                          height: 48,
+                          height: 50,
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.16),
-                            borderRadius: BorderRadius.circular(18),
+                            color: AppColors.primary.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: AppColors.primary.withOpacity(0.22),
+                              color: AppColors.primary.withOpacity(0.16),
                               width: 1,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primary.withOpacity(0.10),
-                                blurRadius: 10,
+                                color: AppColors.primary.withOpacity(0.08),
+                                blurRadius: 12,
                                 offset: const Offset(0, 2),
                               ),
                             ],
@@ -613,7 +620,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Icon(
                   isSelected ? activeIcon : inactiveIcon,
                   color: isSelected ? AppColors.primary : AppColors.textLight,
-                  size: 23,
+                  size: 22,
                 ),
               ),
             ),
@@ -643,7 +650,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: AppTextStyles.label.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w600,
-                            fontSize: 12,
+                            fontSize: 11.5,
                           ),
                         ),
                       ),
