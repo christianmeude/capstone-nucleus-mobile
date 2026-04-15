@@ -323,68 +323,98 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
             ],
           ),
 
-          AnimatedCrossFade(
-            firstChild: const SizedBox.shrink(),
-            secondChild: Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  border: Border.all(color: AppColors.borderLight),
-                ),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      ..._searchFilters.map((filter) {
-                        final isSelected = _selectedSearchFilter == filter;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: _buildFilterChip(
-                            label: filter,
-                            isSelected: isSelected,
-                            isPrimary: true,
-                            onTap: () {
-                              setState(() => _selectedSearchFilter = filter);
-                              _applyFilters();
-                            },
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeOutCubic,
+            transitionBuilder: (child, animation) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+            child: _showFilters
+                ? Padding(
+                    key: const ValueKey('explore_filters'),
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceLight,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.borderLight),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
                           ),
-                        );
-                      }),
-                      Container(
-                        height: 22,
-                        width: 1,
-                        margin: const EdgeInsets.symmetric(horizontal: 8),
-                        color: AppColors.borderLight,
+                        ],
                       ),
-                      ..._categories.map((category) {
-                        final isSelected = _selectedCategory == category;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: _buildFilterChip(
-                            label: category,
-                            isSelected: isSelected,
-                            isPrimary: false,
-                            onTap: () {
-                              setState(() => _selectedCategory = category);
-                              _applyFilters();
-                            },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Search by',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.textLight,
+                            ),
                           ),
-                        );
-                      }),
-                    ],
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _searchFilters.map((filter) {
+                              final isSelected =
+                                  _selectedSearchFilter == filter;
+                              return _buildFilterChip(
+                                label: filter,
+                                isSelected: isSelected,
+                                isPrimary: true,
+                                onTap: () {
+                                  setState(
+                                    () => _selectedSearchFilter = filter,
+                                  );
+                                  _applyFilters();
+                                },
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            height: 1,
+                            width: double.infinity,
+                            color: AppColors.borderLight,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Sort by',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.textLight,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _categories.map((category) {
+                              final isSelected = _selectedCategory == category;
+                              return _buildFilterChip(
+                                label: category,
+                                isSelected: isSelected,
+                                isPrimary: false,
+                                onTap: () {
+                                  setState(() => _selectedCategory = category);
+                                  _applyFilters();
+                                },
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink(
+                    key: ValueKey('explore_filters_hidden'),
                   ),
-                ),
-              ),
-            ),
-            crossFadeState: _showFilters
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
-            duration: const Duration(milliseconds: 180),
           ),
         ],
       ),
@@ -399,32 +429,59 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
   }) {
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
         padding: EdgeInsets.symmetric(
-          horizontal: isPrimary ? 11 : 10,
-          vertical: isPrimary ? 6 : 7,
+          horizontal: isPrimary ? 13 : 12,
+          vertical: isPrimary ? 9 : 9,
         ),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isPrimary ? AppColors.primary : AppColors.accent)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
+              ? (isPrimary
+                    ? AppColors.primary
+                    : AppColors.accent.withOpacity(0.16))
+              : AppColors.surface,
+          borderRadius: BorderRadius.circular(999),
           border: Border.all(
             color: isSelected
-                ? (isPrimary ? AppColors.primary : AppColors.accent)
+                ? (isPrimary
+                      ? AppColors.primary
+                      : AppColors.accent.withOpacity(0.30))
                 : AppColors.borderLight,
             width: 1,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: (isPrimary ? AppColors.primary : AppColors.accent)
+                        .withOpacity(0.08),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.02),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
         ),
-        child: Text(
-          label,
-          style: AppTextStyles.label.copyWith(
-            color: isSelected
-                ? (isPrimary ? Colors.white : AppColors.primary)
-                : AppColors.textSecondary,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-            fontSize: 11,
+        child: AnimatedScale(
+          scale: isSelected ? 1.02 : 1.0,
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          child: Text(
+            label,
+            style: AppTextStyles.label.copyWith(
+              color: isSelected
+                  ? (isPrimary ? Colors.white : AppColors.primaryDark)
+                  : AppColors.textSecondary,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              fontSize: 11.5,
+            ),
           ),
         ),
       ),
