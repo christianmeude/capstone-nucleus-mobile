@@ -25,6 +25,11 @@ class _HomeScreenState extends State<HomeScreen> {
   UserModel? _currentUser;
   bool _isLoading = true;
   int _notificationCount = 0;
+  Future<List<ResearchModel>>? _papersFuture;
+
+  Future<List<ResearchModel>> get _sharedPapersFuture {
+    return _papersFuture ??= ResearchRepository.getMyResearch();
+  }
 
   @override
   void initState() {
@@ -37,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
     var notificationCount = 0;
 
     try {
-      final papers = await ResearchRepository.getMyResearch();
+      final papers = await _sharedPapersFuture;
       notificationCount = papers.where(_requiresNotificationBadge).length;
     } catch (_) {
       notificationCount = 0;
@@ -157,14 +162,14 @@ class _HomeScreenState extends State<HomeScreen> {
     return "Good Evening";
   }
 
-  List<Widget> get _pages => [
-    const BrowseResearchScreen(),
-    const MyResearchScreen(),
-    const AnalyticsScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final pages = [
+      const BrowseResearchScreen(),
+      MyResearchScreen(papersFuture: _sharedPapersFuture),
+      AnalyticsScreen(papersFuture: _sharedPapersFuture),
+    ];
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
@@ -174,10 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               _buildAppBar(),
               Expanded(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: _pages[_currentIndex],
-                ),
+                child: IndexedStack(index: _currentIndex, children: pages),
               ),
             ],
           ),

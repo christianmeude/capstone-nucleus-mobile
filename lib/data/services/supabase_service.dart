@@ -378,20 +378,77 @@ class SupabaseService {
     return prefs.getString('user_role');
   }
 
+  static Future<List<String>> _resolveResearchAuthorIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    final storedUserId = prefs.getString('user_id')?.trim();
+    final storedEmail = prefs.getString('user_email')?.trim();
+    final authUser = client.auth.currentUser;
+
+    final candidateIds = <String>{};
+
+    void addCandidate(String? value) {
+      final candidate = value?.trim();
+      if (candidate != null &&
+          candidate.isNotEmpty &&
+          !candidate.startsWith('debug-')) {
+        candidateIds.add(candidate);
+      }
+    }
+
+    addCandidate(storedUserId);
+    addCandidate(authUser?.id);
+
+    final email = (storedEmail != null && storedEmail.isNotEmpty)
+        ? storedEmail
+        : authUser?.email?.trim();
+
+    if (email != null && email.isNotEmpty) {
+      try {
+        final rows = await client
+            .from('users')
+            .select('id')
+            .ilike('email', email)
+            .limit(1);
+
+        final rowList = rows as List;
+        final firstRow = rowList.isNotEmpty
+            ? rowList.first as Map<String, dynamic>
+            : null;
+        addCandidate(firstRow?['id']?.toString());
+      } catch (_) {
+        // Ignore lookup failures and fall back to the local/auth identifiers.
+      }
+
+      const legacyEmailToPublicUserId = {
+        'malfoy@students.com': '0e0955f8-2d55-419a-a2e2-c834dfb535e1',
+      };
+
+      addCandidate(legacyEmailToPublicUserId[email.toLowerCase()]);
+    }
+
+    return candidateIds.toList();
+  }
+
   // ==========================================
   // RESEARCH PAPERS
   // ==========================================
 
   /// Get user's own research papers
   static Future<List<ResearchModel>> getMyResearch() async {
-    final userId = await getCurrentUserId();
-    if (userId == null) throw Exception('Not authenticated');
+    final authorIds = await _resolveResearchAuthorIds();
+    if (authorIds.isEmpty) throw Exception('Not authenticated');
 
-    final response = await client
-        .from('research_papers')
-        .select()
-        .eq('author_id', userId)
-        .order('created_at', ascending: false);
+    final query = authorIds.length == 1
+        ? client
+              .from('research_papers')
+              .select()
+              .eq('author_id', authorIds.single)
+        : client
+              .from('research_papers')
+              .select()
+              .or(authorIds.map((id) => 'author_id.eq.$id').join(','));
+
+    final response = await query.order('created_at', ascending: false);
 
     return (response as List).map((json) {
       try {

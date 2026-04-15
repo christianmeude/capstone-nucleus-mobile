@@ -7,7 +7,9 @@ import '../../../data/models/research_model.dart';
 import '../../widgets/common/animated_widgets.dart';
 
 class AnalyticsScreen extends StatefulWidget {
-  const AnalyticsScreen({super.key});
+  final Future<List<ResearchModel>>? papersFuture;
+
+  const AnalyticsScreen({super.key, this.papersFuture});
 
   @override
   State<AnalyticsScreen> createState() => _AnalyticsScreenState();
@@ -19,16 +21,58 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   int _totalViews = 0;
   int _totalDownloads = 0;
   String? _errorMessage;
+  Future<List<ResearchModel>>? _papersFuture;
 
   @override
   void initState() {
     super.initState();
+    _papersFuture = widget.papersFuture;
     _loadAnalytics();
+  }
+
+  @override
+  void didUpdateWidget(covariant AnalyticsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.papersFuture != widget.papersFuture &&
+        widget.papersFuture != null) {
+      _papersFuture = widget.papersFuture;
+    }
   }
 
   Future<void> _loadAnalytics() async {
     try {
-      final papers = await ResearchRepository.getMyResearch();
+      final papers = await (_papersFuture ??=
+          ResearchRepository.getMyResearch());
+      if (mounted) {
+        setState(() {
+          _myPapers = papers;
+          _totalViews = papers.fold(0, (sum, p) => sum + p.viewCount);
+          _totalDownloads = papers.fold(0, (sum, p) => sum + p.downloadCount);
+          _errorMessage = null;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        });
+      }
+    }
+  }
+
+  Future<void> _reloadAnalytics() async {
+    final freshFuture = ResearchRepository.getMyResearch();
+
+    setState(() {
+      _papersFuture = freshFuture;
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final papers = await freshFuture;
       if (mounted) {
         setState(() {
           _myPapers = papers;
@@ -56,7 +100,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     if (_errorMessage != null) {
       return RefreshIndicator(
-        onRefresh: _loadAnalytics,
+        onRefresh: _reloadAnalytics,
         color: AppColors.primary,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(
@@ -101,7 +145,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     }
 
     return RefreshIndicator(
-      onRefresh: _loadAnalytics,
+      onRefresh: _reloadAnalytics,
       color: AppColors.primary,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(
@@ -290,11 +334,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.analytics_outlined,
-            size: 40,
-            color: AppColors.textLight,
-          ),
+          Icon(Icons.analytics_outlined, size: 40, color: AppColors.textLight),
           const SizedBox(height: 12),
           Text("No Data Yet", style: AppTextStyles.labelMedium),
           const SizedBox(height: 4),

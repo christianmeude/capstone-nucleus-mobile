@@ -7,7 +7,9 @@ import '../../../data/models/research_model.dart';
 import '../../widgets/common/animated_widgets.dart';
 
 class MyResearchScreen extends StatefulWidget {
-  const MyResearchScreen({super.key});
+  final Future<List<ResearchModel>>? papersFuture;
+
+  const MyResearchScreen({super.key, this.papersFuture});
 
   @override
   State<MyResearchScreen> createState() => _MyResearchScreenState();
@@ -18,11 +20,34 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
   String _searchQuery = '';
   String _selectedFilter = 'All'; // All, Published, Pending, Rejected
   String _viewMode = 'list'; // 'list' or 'tile'
+  Future<List<ResearchModel>>? _papersFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _papersFuture = widget.papersFuture;
+  }
+
+  @override
+  void didUpdateWidget(covariant MyResearchScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.papersFuture != widget.papersFuture &&
+        widget.papersFuture != null) {
+      _papersFuture = widget.papersFuture;
+    }
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _reloadPapers() async {
+    setState(() {
+      _papersFuture = ResearchRepository.getMyResearch();
+    });
+    await _papersFuture;
   }
 
   List<ResearchModel> _filterPapers(List<ResearchModel> papers) {
@@ -67,10 +92,13 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final papersFuture = _papersFuture ??= ResearchRepository.getMyResearch();
+
     return FutureBuilder<List<ResearchModel>>(
-      future: ResearchRepository.getMyResearch(),
+      future: papersFuture,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
           return _buildLoadingState();
         }
 
@@ -82,7 +110,7 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
         final filteredPapers = _filterPapers(allPapers);
 
         return RefreshIndicator(
-          onRefresh: () async => setState(() {}),
+          onRefresh: _reloadPapers,
           color: AppColors.primary,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(
