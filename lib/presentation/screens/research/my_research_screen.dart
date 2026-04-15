@@ -17,6 +17,7 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _selectedFilter = 'All'; // All, Published, Pending, Rejected
+  String _viewMode = 'list'; // 'list' or 'tile'
 
   @override
   void dispose() {
@@ -175,7 +176,10 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Unable to load your papers', style: AppTextStyles.labelMedium),
+                  Text(
+                    'Unable to load your papers',
+                    style: AppTextStyles.labelMedium,
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     clean,
@@ -449,34 +453,108 @@ class _MyResearchScreenState extends State<MyResearchScreen> {
                   : "$_selectedFilter Submissions",
               style: AppTextStyles.labelMedium,
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '${papers.length}',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${papers.length}',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                _buildViewToggle(),
+              ],
             ),
           ],
         ),
         const SizedBox(height: 12),
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: papers.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
-          itemBuilder: (context, index) {
-            final paper = papers[index];
-            return _PaperStatusCard(paper: paper);
-          },
-        ),
+        if (_viewMode == 'list')
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: papers.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              final paper = papers[index];
+              return _PaperStatusCard(paper: paper);
+            },
+          )
+        else
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 0.85,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+            ),
+            itemCount: papers.length,
+            itemBuilder: (context, index) {
+              final paper = papers[index];
+              return _PaperTileCard(paper: paper);
+            },
+          ),
       ],
+    );
+  }
+
+  Widget _buildViewToggle() {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.borderLight, width: 1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          _buildViewToggleButton(
+            icon: Icons.view_list_rounded,
+            mode: 'list',
+            isSelected: _viewMode == 'list',
+          ),
+          _buildViewToggleButton(
+            icon: Icons.apps_rounded,
+            mode: 'tile',
+            isSelected: _viewMode == 'tile',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildViewToggleButton({
+    required IconData icon,
+    required String mode,
+    required bool isSelected,
+  }) {
+    return GestureDetector(
+      onTap: () => setState(() => _viewMode = mode),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withOpacity(0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(
+          icon,
+          color: isSelected ? AppColors.primary : AppColors.textLight,
+          size: 20,
+        ),
+      ),
     );
   }
 }
@@ -613,6 +691,97 @@ class _PaperStatusCard extends StatelessWidget {
             Icons.chevron_right_rounded,
             size: 20,
             color: AppColors.textLight,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PaperTileCard extends StatelessWidget {
+  final ResearchModel paper;
+
+  const _PaperTileCard({required this.paper});
+
+  @override
+  Widget build(BuildContext context) {
+    final status = paper.status;
+    Color statusColor;
+    IconData statusIcon;
+    String statusLabel;
+
+    if (status == AppConstants.statusApproved || status == 'published') {
+      statusColor = AppColors.success;
+      statusIcon = Icons.check_circle_rounded;
+      statusLabel = "Published";
+    } else if (status == AppConstants.statusRejected) {
+      statusColor = AppColors.error;
+      statusIcon = Icons.cancel_rounded;
+      statusLabel = "Rejected";
+    } else {
+      statusColor = AppColors.warning;
+      statusIcon = Icons.schedule_rounded;
+      statusLabel = "Pending";
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 90,
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.08),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Center(
+              child: Icon(statusIcon, color: statusColor, size: 32),
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    paper.title,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      statusLabel,
+                      style: AppTextStyles.caption.copyWith(
+                        color: statusColor,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

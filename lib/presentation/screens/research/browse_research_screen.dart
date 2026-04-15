@@ -17,6 +17,7 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
   // Category filter
   String _selectedCategory = "All";
   final List<String> _categories = ["All", "Published", "Recent", "Popular"];
+  String _viewMode = 'list'; // 'list' or 'tile'
 
   bool _showFilters = false;
 
@@ -82,7 +83,7 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
 
   void _applyFilters() {
     final query = _searchController.text.toLowerCase().trim();
-    
+
     List<ResearchModel> results = _papers;
 
     // Apply search filter
@@ -100,19 +101,23 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
           break;
         case 'Keywords':
           results = results
-              .where((p) =>
-                  p.keywords?.any((k) => k.toLowerCase().contains(query)) ??
-                  false)
+              .where(
+                (p) =>
+                    p.keywords?.any((k) => k.toLowerCase().contains(query)) ??
+                    false,
+              )
               .toList();
           break;
         default:
           results = results
-              .where((p) =>
-                  p.title.toLowerCase().contains(query) ||
-                  (p.authorName ?? '').toLowerCase().contains(query) ||
-                  (p.keywords?.any((k) => k.toLowerCase().contains(query)) ??
-                      false) ||
-                  p.abstract.toLowerCase().contains(query))
+              .where(
+                (p) =>
+                    p.title.toLowerCase().contains(query) ||
+                    (p.authorName ?? '').toLowerCase().contains(query) ||
+                    (p.keywords?.any((k) => k.toLowerCase().contains(query)) ??
+                        false) ||
+                    p.abstract.toLowerCase().contains(query),
+              )
               .toList();
       }
     }
@@ -120,8 +125,11 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
     // Apply category filter
     switch (_selectedCategory) {
       case 'Recent':
-        results.sort((a, b) => (b.createdAt ?? DateTime(1900))
-            .compareTo(a.createdAt ?? DateTime(1900)));
+        results.sort(
+          (a, b) => (b.createdAt ?? DateTime(1900)).compareTo(
+            a.createdAt ?? DateTime(1900),
+          ),
+        );
         break;
       case 'Popular':
         results.sort((a, b) => b.viewCount.compareTo(a.viewCount));
@@ -211,7 +219,10 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
               ),
               if (_searchController.text.isNotEmpty)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(18),
@@ -223,10 +234,12 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                ),
+                )
+              else
+                _buildViewToggle(),
             ],
           ),
-          
+
           const SizedBox(height: 12),
           Row(
             children: [
@@ -293,7 +306,9 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
                 },
                 icon: Icon(
                   Icons.tune_rounded,
-                  color: _showFilters ? AppColors.primary : AppColors.textSecondary,
+                  color: _showFilters
+                      ? AppColors.primary
+                      : AppColors.textSecondary,
                   size: 22,
                 ),
                 tooltip: 'Filters',
@@ -313,7 +328,10 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
             secondChild: Padding(
               padding: const EdgeInsets.only(top: 10),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   border: Border.all(color: AppColors.borderLight),
@@ -367,7 +385,7 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
                 ? CrossFadeState.showSecond
                 : CrossFadeState.showFirst,
             duration: const Duration(milliseconds: 180),
-            ),
+          ),
         ],
       ),
     );
@@ -388,12 +406,12 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
           vertical: isPrimary ? 6 : 7,
         ),
         decoration: BoxDecoration(
-          color: isSelected 
-              ? (isPrimary ? AppColors.primary : AppColors.accent) 
+          color: isSelected
+              ? (isPrimary ? AppColors.primary : AppColors.accent)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected 
+            color: isSelected
                 ? (isPrimary ? AppColors.primary : AppColors.accent)
                 : AppColors.borderLight,
             width: 1,
@@ -481,7 +499,7 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
 
   Widget _buildEmptyState() {
     final isSearching = _searchController.text.isNotEmpty;
-    
+
     return RefreshIndicator(
       onRefresh: _loadPapers,
       color: AppColors.primary,
@@ -502,7 +520,9 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      isSearching ? Icons.search_off_rounded : Icons.library_books_outlined,
+                      isSearching
+                          ? Icons.search_off_rounded
+                          : Icons.library_books_outlined,
                       size: 56,
                       color: AppColors.primary,
                     ),
@@ -516,7 +536,7 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    isSearching 
+                    isSearching
                         ? 'Try different keywords or\nadjust your filters'
                         : 'Published research papers will appear here.\nPull down to refresh.',
                     style: AppTextStyles.bodyMedium.copyWith(
@@ -549,19 +569,85 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
       onRefresh: _loadPapers,
       color: AppColors.primary,
       backgroundColor: AppColors.surface,
-      child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-        physics: const AlwaysScrollableScrollPhysics(
-          parent: BouncingScrollPhysics(),
+      child: _viewMode == 'list'
+          ? ListView.builder(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              itemCount: papers.length,
+              itemBuilder: (context, index) {
+                final paper = papers[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _PaperCard(paper: paper),
+                );
+              },
+            )
+          : GridView.builder(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.85,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              itemCount: papers.length,
+              itemBuilder: (context, index) {
+                final paper = papers[index];
+                return _PaperTileCard(paper: paper);
+              },
+            ),
+    );
+  }
+
+  Widget _buildViewToggle() {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.borderLight, width: 1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          _buildViewToggleButton(
+            icon: Icons.view_list_rounded,
+            mode: 'list',
+            isSelected: _viewMode == 'list',
+          ),
+          _buildViewToggleButton(
+            icon: Icons.apps_rounded,
+            mode: 'tile',
+            isSelected: _viewMode == 'tile',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildViewToggleButton({
+    required IconData icon,
+    required String mode,
+    required bool isSelected,
+  }) {
+    return GestureDetector(
+      onTap: () => setState(() => _viewMode = mode),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withOpacity(0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
         ),
-        itemCount: papers.length,
-        itemBuilder: (context, index) {
-          final paper = papers[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: _PaperCard(paper: paper),
-          );
-        },
+        child: Icon(
+          icon,
+          color: isSelected ? AppColors.primary : AppColors.textLight,
+          size: 20,
+        ),
       ),
     );
   }
@@ -685,10 +771,7 @@ class _PaperCard extends StatelessWidget {
               const SizedBox(height: 14),
 
               // Divider
-              Container(
-                height: 1,
-                color: AppColors.borderLight,
-              ),
+              Container(height: 1, color: AppColors.borderLight),
 
               const SizedBox(height: 12),
 
@@ -750,6 +833,96 @@ class _PaperCard extends StatelessWidget {
                     ],
                   ),
                 ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PaperTileCard extends StatelessWidget {
+  final ResearchModel paper;
+
+  const _PaperTileCard({required this.paper});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          Navigator.pushNamed(
+            context,
+            AppRoutes.researchDetail,
+            arguments: paper,
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.borderLight, width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                height: 90,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.08),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.description_rounded,
+                    color: AppColors.primary,
+                    size: 32,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        paper.title,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      if (paper.authorName != null)
+                        Flexible(
+                          child: Text(
+                            paper.authorName!,
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.textSecondary,
+                              fontSize: 10,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
