@@ -49,10 +49,7 @@ class SupabaseService {
       return (firstName: parts.first, lastName: parts.first);
     }
 
-    return (
-      firstName: parts.first,
-      lastName: parts.sublist(1).join(' '),
-    );
+    return (firstName: parts.first, lastName: parts.sublist(1).join(' '));
   }
 
   static Future<Map<String, dynamic>> _loginWithSupabaseAuth({
@@ -80,7 +77,8 @@ class SupabaseService {
           // Ignore policy errors in debug fallback.
         }
 
-        final fallbackUser = debugUser ??
+        final fallbackUser =
+            debugUser ??
             {
               'id': 'debug-${email.hashCode}',
               'email': email,
@@ -117,7 +115,8 @@ class SupabaseService {
         .ilike('email', email)
         .maybeSingle();
 
-    final userData = appUser ??
+    final userData =
+        appUser ??
         {
           'id': authUser.id,
           'email': authUser.email ?? email,
@@ -299,13 +298,27 @@ class SupabaseService {
 
     if (userId == null) return null;
 
-    final response = await client
-        .from('users')
-        .select()
-        .eq('id', userId)
-        .single();
+    try {
+      final response = await client
+          .from('users')
+          .select()
+          .eq('id', userId)
+          .maybeSingle();
 
-    return UserModel.fromJson(response);
+      if (response == null) {
+        // Local session can outlive DB row changes; treat as signed-out state.
+        await prefs.remove('user_id');
+        return null;
+      }
+
+      return UserModel.fromJson(response);
+    } on PostgrestException catch (e) {
+      if (e.code == 'PGRST116') {
+        await prefs.remove('user_id');
+        return null;
+      }
+      rethrow;
+    }
   }
 
   /// Get current user ID
@@ -401,7 +414,7 @@ class SupabaseService {
       // Try fetching with join first
       var query = client
           .from('research_papers')
-          .select('*, users!author_id(full_name, email)')
+          .select('*, users!author_id(email)')
           .or('status.eq.approved,status.eq.published');
 
       if (category != null && category.isNotEmpty) {
@@ -437,9 +450,13 @@ class SupabaseService {
   static Future<ResearchModel> getResearchById(String id) async {
     final response = await client
         .from('research_papers')
-        .select('*, users!author_id(full_name, email)')
+        .select('*, users!author_id(email)')
         .eq('id', id)
-        .single();
+        .maybeSingle();
+
+    if (response == null) {
+      throw Exception('Research paper not found');
+    }
 
     // Increment view count
     await client.rpc('increment_view_count', params: {'row_id': id});
@@ -458,6 +475,7 @@ class SupabaseService {
     required String filename,
     String? facultyId,
     String? department,
+    String? departmentId,
   }) async {
     final userId = await getCurrentUserId();
     if (userId == null) throw Exception('Not authenticated');
@@ -506,6 +524,7 @@ class SupabaseService {
       'status': initialStatus,
       'faculty_id': facultyId,
       'department': department,
+      'department_id': departmentId,
     });
   }
 
@@ -533,22 +552,42 @@ class SupabaseService {
     return List<Map<String, dynamic>>.from(response);
   }
 
+  /// Get active departments for submission filtering
+  static Future<List<Map<String, dynamic>>> getDepartments() async {
+    final response = await client
+        .from('departments')
+        .select('id, name, code, description')
+        .eq('is_active', true)
+        .order('name');
+
+    return List<Map<String, dynamic>>.from(response);
+  }
+
   /// Get faculty members
   static Future<List<Map<String, dynamic>>> getFacultyMembers({
     String? department,
+    String? departmentId,
   }) async {
     var query = client
         .from('users')
-        .select('id, full_name, email, department')
+        .select(
+          'id, first_name, middle_name, last_name, email, department, department_id',
+        )
         .eq('role', 'faculty');
 
-    if (department != null && department.isNotEmpty) {
+    if (departmentId != null && departmentId.isNotEmpty) {
+      query = query.eq('department_id', departmentId);
+    } else if (department != null && department.isNotEmpty) {
       query = query.eq('department', department);
     }
 
-    final response = await query.order('full_name');
+    final response = await query.order('last_name').order('first_name');
 
-    return List<Map<String, dynamic>>.from(response);
+    return List<Map<String, dynamic>>.from(response).map((member) {
+      final normalizedMember = Map<String, dynamic>.from(member);
+      normalizedMember['full_name'] = _buildDisplayName(normalizedMember);
+      return normalizedMember;
+    }).toList();
   }
 
   /// Search students (for co-author selection)
@@ -557,12 +596,20 @@ class SupabaseService {
 
     final response = await client
         .from('users')
-        .select('id, full_name, email, program')
+        .select('id, first_name, middle_name, last_name, email, program')
         .eq('role', 'student')
-        .or('full_name.ilike.%$query%,email.ilike.%$query%')
+        .or(
+          'first_name.ilike.%$query%,middle_name.ilike.%$query%,last_name.ilike.%$query%,email.ilike.%$query%',
+        )
+        .order('last_name')
+        .order('first_name')
         .limit(10);
 
-    return List<Map<String, dynamic>>.from(response);
+    return List<Map<String, dynamic>>.from(response).map((student) {
+      final normalizedStudent = Map<String, dynamic>.from(student);
+      normalizedStudent['full_name'] = _buildDisplayName(normalizedStudent);
+      return normalizedStudent;
+    }).toList();
   }
 
   // ==========================================
@@ -573,7 +620,7 @@ class SupabaseService {
   static Future<List<ResearchModel>> getAllResearch({String? status}) async {
     var query = client
         .from('research_papers')
-        .select('*, users!author_id(full_name, email)');
+        .select('*, users!author_id(email)');
 
     if (status != null && status.isNotEmpty) {
       query = query.eq('status', status);

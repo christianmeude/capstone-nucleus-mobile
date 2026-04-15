@@ -6,6 +6,7 @@ import 'dart:io';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../data/models/category_model.dart';
+import '../../../data/models/department_model.dart';
 import '../../../data/models/faculty_member_model.dart';
 import '../../../data/models/student_model.dart';
 import '../../../data/repositories/research_repository.dart';
@@ -32,17 +33,16 @@ class _SubmitResearchScreenState extends State<SubmitResearchScreen> {
   final _titleController = TextEditingController();
   final _abstractController = TextEditingController();
   final _keywordsController = TextEditingController();
-  final _departmentController = TextEditingController();
 
   final _titleFocus = FocusNode();
   final _abstractFocus = FocusNode();
   final _keywordsFocus = FocusNode();
-  final _departmentFocus = FocusNode();
   final _coAuthorSearchController = TextEditingController();
   final _coAuthorSearchFocus = FocusNode();
 
   // Selected values
   CategoryModel? _selectedCategory;
+  DepartmentModel? _selectedDepartment;
   FacultyMemberModel? _selectedFaculty;
 
   // Co-author search state
@@ -53,8 +53,10 @@ class _SubmitResearchScreenState extends State<SubmitResearchScreen> {
 
   // Dropdown data
   List<CategoryModel> _categories = [];
+  List<DepartmentModel> _departments = [];
   List<FacultyMemberModel> _facultyMembers = [];
   bool _isLoadingCategories = true;
+  bool _isLoadingDepartments = true;
   bool _isLoadingFaculty = true;
 
   // File picker state
@@ -76,24 +78,24 @@ class _SubmitResearchScreenState extends State<SubmitResearchScreen> {
     _titleController.dispose();
     _abstractController.dispose();
     _keywordsController.dispose();
-    _departmentController.dispose();
     _coAuthorSearchController.dispose();
     _titleFocus.dispose();
     _abstractFocus.dispose();
     _keywordsFocus.dispose();
-    _departmentFocus.dispose();
     _coAuthorSearchFocus.dispose();
     super.dispose();
   }
 
-  /// Load categories and faculty members for dropdowns
+  /// Load categories, departments, and faculty members for dropdowns
   Future<void> _loadDropdownData() async {
-    await Future.wait([_loadCategories(), _loadFacultyMembers()]);
+    await Future.wait([_loadCategories(), _loadDepartments()]);
+    await _loadFacultyMembers();
   }
 
   Future<void> _loadCategories() async {
     try {
       final categoriesData = await ResearchRepository.getCategories();
+      if (!mounted) return;
       setState(() {
         _categories = categoriesData
             .map((c) => CategoryModel.fromJson(c))
@@ -109,9 +111,34 @@ class _SubmitResearchScreenState extends State<SubmitResearchScreen> {
     }
   }
 
-  Future<void> _loadFacultyMembers() async {
+  Future<void> _loadDepartments() async {
     try {
-      final facultyData = await ResearchRepository.getFacultyMembers();
+      final departmentsData = await ResearchRepository.getDepartments();
+      if (!mounted) return;
+      setState(() {
+        _departments = departmentsData
+            .map((d) => DepartmentModel.fromJson(d))
+            .toList();
+        _isLoadingDepartments = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading departments: $e');
+      if (!mounted) return;
+      setState(() => _isLoadingDepartments = false);
+    }
+  }
+
+  Future<void> _loadFacultyMembers({DepartmentModel? department}) async {
+    if (mounted) {
+      setState(() => _isLoadingFaculty = true);
+    }
+
+    try {
+      final facultyData = await ResearchRepository.getFacultyMembers(
+        department: department?.name,
+        departmentId: department?.id,
+      );
+      if (!mounted) return;
       setState(() {
         _facultyMembers = facultyData
             .map((f) => FacultyMemberModel.fromJson(f))
@@ -120,9 +147,22 @@ class _SubmitResearchScreenState extends State<SubmitResearchScreen> {
       });
     } catch (e) {
       debugPrint('Error loading faculty members: $e');
-      setState(() => _isLoadingFaculty = false);
+      if (!mounted) return;
+      setState(() {
+        _facultyMembers = [];
+        _isLoadingFaculty = false;
+      });
       // Don't show error for faculty - it's optional
     }
+  }
+
+  Future<void> _handleDepartmentChanged(DepartmentModel? department) async {
+    setState(() {
+      _selectedDepartment = department;
+      _selectedFaculty = null;
+    });
+
+    await _loadFacultyMembers(department: department);
   }
 
   /// Search for students to add as co-authors
@@ -292,9 +332,8 @@ class _SubmitResearchScreenState extends State<SubmitResearchScreen> {
         category: _selectedCategory!.name,
         coAuthors: coAuthorsString,
         facultyId: _selectedFaculty?.id,
-        department: _departmentController.text.trim().isEmpty
-            ? null
-            : _departmentController.text.trim(),
+        department: _selectedDepartment?.name,
+        departmentId: _selectedDepartment?.id,
         fileBytes: bytes,
         filename: filename,
       );
@@ -652,24 +691,16 @@ class _SubmitResearchScreenState extends State<SubmitResearchScreen> {
 
         const SizedBox(height: 18),
 
-        // Faculty Advisor Dropdown (optional)
-        _buildFacultyDropdown()
+        // Department Dropdown (optional)
+        _buildDepartmentDropdown()
             .animate()
             .fadeIn(delay: 600.ms, duration: 500.ms)
             .slideY(begin: 0.2, end: 0, curve: Curves.easeOutCubic),
 
         const SizedBox(height: 18),
 
-        // Department (optional)
-        AnimatedInputField(
-              controller: _departmentController,
-              focusNode: _departmentFocus,
-              label: "Department (Optional)",
-              hint: "e.g., Computer Science, Biology",
-              prefixIcon: Icons.business_outlined,
-              textInputAction: TextInputAction.next,
-              onFieldSubmitted: (_) => _keywordsFocus.requestFocus(),
-            )
+        // Faculty Advisor Dropdown (optional)
+        _buildFacultyDropdown()
             .animate()
             .fadeIn(delay: 700.ms, duration: 500.ms)
             .slideY(begin: 0.2, end: 0, curve: Curves.easeOutCubic),
@@ -985,6 +1016,117 @@ class _SubmitResearchScreenState extends State<SubmitResearchScreen> {
     );
   }
 
+  Widget _buildDepartmentDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              "Department (Optional)",
+              style: AppTextStyles.label.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Tooltip(
+              message:
+                  'Selecting a department filters the faculty advisor list.',
+              child: Icon(
+                Icons.info_outline_rounded,
+                size: 16,
+                color: AppColors.textLight,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [AppColors.softShadow],
+          ),
+          child: _isLoadingDepartments
+              ? _buildLoadingDropdown('Loading departments...')
+              : DropdownButtonFormField<DepartmentModel?>(
+                  value: _selectedDepartment,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(
+                      Icons.business_outlined,
+                      color: AppColors.textLight,
+                      size: 22,
+                    ),
+                    hintText: 'Select a department (optional)',
+                    hintStyle: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textLight,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: AppColors.borderLight.withOpacity(0.5),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(
+                        color: AppColors.primary,
+                        width: 2,
+                      ),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                  ),
+                  items: [
+                    DropdownMenuItem<DepartmentModel?>(
+                      value: null,
+                      child: Text(
+                        'Select department (optional)',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                    ..._departments.map((department) {
+                      return DropdownMenuItem<DepartmentModel?>(
+                        value: department,
+                        child: Text(
+                          department.displayName,
+                          style: AppTextStyles.bodyMedium,
+                        ),
+                      );
+                    }),
+                  ],
+                  onChanged: (value) {
+                    _handleDepartmentChanged(value);
+                  },
+                  isExpanded: true,
+                  dropdownColor: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Selecting a department helps route review assignments correctly and filters faculty advisors.',
+          style: AppTextStyles.bodySmall.copyWith(
+            color: AppColors.textLight,
+            fontSize: 11,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildFacultyDropdown() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1001,7 +1143,7 @@ class _SubmitResearchScreenState extends State<SubmitResearchScreen> {
             const SizedBox(width: 8),
             Tooltip(
               message:
-                  'Selecting a faculty advisor means your paper will be reviewed by them first before going to the editorial staff.',
+                  'Selecting a faculty advisor means your paper will be reviewed by them first before going to the editorial staff. Department selection filters this list.',
               child: Icon(
                 Icons.info_outline_rounded,
                 size: 16,

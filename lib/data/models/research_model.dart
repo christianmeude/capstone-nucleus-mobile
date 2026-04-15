@@ -46,6 +46,42 @@ class ResearchModel {
   });
 
   factory ResearchModel.fromJson(Map<String, dynamic> json) {
+    final users = json['users'] is Map<String, dynamic>
+        ? json['users'] as Map<String, dynamic>
+        : (json['users'] is Map
+              ? Map<String, dynamic>.from(json['users'] as Map)
+              : null);
+
+    final author = json['author'] is Map<String, dynamic>
+        ? json['author'] as Map<String, dynamic>
+        : (json['author'] is Map
+              ? Map<String, dynamic>.from(json['author'] as Map)
+              : null);
+
+    final authorEmail =
+        users?['email']?.toString() ?? author?['email']?.toString();
+
+    final usersFirst = users?['first_name']?.toString().trim() ?? '';
+    final usersLast = users?['last_name']?.toString().trim() ?? '';
+    final usersFull = users?['full_name']?.toString().trim() ?? '';
+    final authorFull = author?['full_name']?.toString().trim() ?? '';
+
+    final composedName = [
+      usersFirst,
+      usersLast,
+    ].where((part) => part.isNotEmpty).join(' ').trim();
+
+    String? resolvedAuthorName;
+    if (usersFull.isNotEmpty) {
+      resolvedAuthorName = usersFull;
+    } else if (authorFull.isNotEmpty) {
+      resolvedAuthorName = authorFull;
+    } else if (composedName.isNotEmpty) {
+      resolvedAuthorName = composedName;
+    } else if (authorEmail != null && authorEmail.contains('@')) {
+      resolvedAuthorName = authorEmail.split('@').first;
+    }
+
     return ResearchModel(
       id: json['id']?.toString() ?? '',
       authorId: json['author_id']?.toString() ?? '',
@@ -80,12 +116,8 @@ class ResearchModel {
           : null,
       viewCount: json['view_count'] is int ? json['view_count'] : 0,
       downloadCount: json['download_count'] is int ? json['download_count'] : 0,
-      authorName:
-          json['users']?['full_name']?.toString() ??
-          json['author']?['full_name']?.toString(),
-      authorEmail:
-          json['users']?['email']?.toString() ??
-          json['author']?['email']?.toString(),
+      authorName: resolvedAuthorName,
+      authorEmail: authorEmail,
     );
   }
 

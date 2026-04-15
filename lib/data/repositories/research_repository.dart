@@ -38,6 +38,7 @@ class ResearchRepository {
     required String filename,
     String? facultyId,
     String? department,
+    String? departmentId,
   }) async {
     await SupabaseService.submitResearch(
       title: title,
@@ -49,6 +50,7 @@ class ResearchRepository {
       filename: filename,
       facultyId: facultyId,
       department: department,
+      departmentId: departmentId,
     );
   }
 
@@ -62,11 +64,20 @@ class ResearchRepository {
     return await SupabaseService.getCategories();
   }
 
+  /// Get active departments for submission filtering
+  static Future<List<Map<String, dynamic>>> getDepartments() async {
+    return await SupabaseService.getDepartments();
+  }
+
   /// Get faculty members
   static Future<List<Map<String, dynamic>>> getFacultyMembers({
     String? department,
+    String? departmentId,
   }) async {
-    return await SupabaseService.getFacultyMembers(department: department);
+    return await SupabaseService.getFacultyMembers(
+      department: department,
+      departmentId: departmentId,
+    );
   }
 
   /// Search for students (co-author selection)
@@ -75,7 +86,10 @@ class ResearchRepository {
   }
 
   /// Approve a research paper (staff/admin)
-  static Future<void> approveResearch(String paperId, {String? comments}) async {
+  static Future<void> approveResearch(
+    String paperId, {
+    String? comments,
+  }) async {
     await SupabaseService.approveResearch(paperId, comments: comments);
   }
 
