@@ -122,6 +122,18 @@ class _HomeScreenState extends State<HomeScreen> {
     return "Good Evening";
   }
 
+  String get _userInitials {
+    final fullName = _currentUser?.fullName.trim() ?? '';
+    if (fullName.isEmpty) return '?';
+
+    final parts = fullName.split(RegExp(r'\s+'));
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+
+    return fullName[0].toUpperCase();
+  }
+
   List<Widget> get _pages => [
     const BrowseResearchScreen(),
     const MyResearchScreen(),
@@ -231,9 +243,14 @@ class _HomeScreenState extends State<HomeScreen> {
           // Notification with modern badge
           _buildAppBarButton(
             icon: Icons.notifications_outlined,
-            onPressed: () {},
+            onPressed: () =>
+                Navigator.pushNamed(context, AppRoutes.notifications),
             showBadge: true,
           ),
+
+          const SizedBox(width: 8),
+
+          _buildProfileButton(),
 
           const SizedBox(width: 8),
 
@@ -285,6 +302,35 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 )
               : Icon(icon, color: Colors.white, size: 22),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileButton() {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => Navigator.pushNamed(context, AppRoutes.profile),
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.14),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.white.withOpacity(0.12), width: 1),
+          ),
+          child: Center(
+            child: Text(
+              _isLoading ? '...' : _userInitials,
+              style: AppTextStyles.label.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 11,
+              ),
+            ),
+          ),
         ),
       ),
     );

@@ -5,6 +5,8 @@ import '../presentation/screens/auth/login_screen.dart';
 import '../presentation/screens/auth/register_screen.dart';
 import '../presentation/screens/auth/splash_screen.dart';
 import '../presentation/screens/home/home_screen.dart';
+import '../presentation/screens/shared/notifications_screen.dart';
+import '../presentation/screens/shared/profile_dashboard_screen.dart';
 import '../presentation/screens/research/submit_research_screen.dart';
 import '../presentation/screens/research/research_detail_screen.dart';
 import '../data/models/research_model.dart';
@@ -19,6 +21,8 @@ class AppRoutes {
   static const String home = '/home';
   static const String submitResearch = '/submit-research';
   static const String researchDetail = '/research-detail';
+  static const String profile = '/profile';
+  static const String notifications = '/notifications';
 
   // Route generator
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -42,6 +46,12 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: (_) => ResearchDetailScreen(paper: paper),
         );
+      case profile:
+        return MaterialPageRoute(
+          builder: (_) => const ProfileDashboardScreen(),
+        );
+      case notifications:
+        return MaterialPageRoute(builder: (_) => const NotificationsScreen());
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(
