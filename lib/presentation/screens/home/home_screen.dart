@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../data/repositories/auth_repository.dart';
+import '../../../data/repositories/research_repository.dart';
 import '../../../data/models/user_model.dart';
+import '../../../data/models/research_model.dart';
 import '../../../routes/app_routes.dart';
 import '../research/browse_research_screen.dart';
 import '../research/my_research_screen.dart';
 import '../research/analytics_screen.dart';
+
+enum _AccountAction { profile, settings, logout }
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,6 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   UserModel? _currentUser;
   bool _isLoading = true;
+  int _notificationCount = 0;
 
   @override
   void initState() {
@@ -28,11 +34,40 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadUserData() async {
     final user = await AuthRepository.getCurrentUser();
+    var notificationCount = 0;
+
+    try {
+      final papers = await ResearchRepository.getMyResearch();
+      notificationCount = papers.where(_requiresNotificationBadge).length;
+    } catch (_) {
+      notificationCount = 0;
+    }
+
     if (mounted) {
       setState(() {
         _currentUser = user;
+        _notificationCount = notificationCount;
         _isLoading = false;
       });
+    }
+  }
+
+  bool _requiresNotificationBadge(ResearchModel paper) {
+    return paper.status != AppConstants.statusApproved &&
+        paper.status != 'published';
+  }
+
+  void _openAccountAction(_AccountAction action) {
+    switch (action) {
+      case _AccountAction.profile:
+        Navigator.pushNamed(context, AppRoutes.profile);
+        return;
+      case _AccountAction.settings:
+        Navigator.pushNamed(context, AppRoutes.settings);
+        return;
+      case _AccountAction.logout:
+        _handleLogout();
+        return;
     }
   }
 
@@ -120,18 +155,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (hour < 12) return "Good Morning";
     if (hour < 17) return "Good Afternoon";
     return "Good Evening";
-  }
-
-  String get _userInitials {
-    final fullName = _currentUser?.fullName.trim() ?? '';
-    if (fullName.isEmpty) return '?';
-
-    final parts = fullName.split(RegExp(r'\s+'));
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    }
-
-    return fullName[0].toUpperCase();
   }
 
   List<Widget> get _pages => [
@@ -245,20 +268,16 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icons.notifications_outlined,
             onPressed: () =>
                 Navigator.pushNamed(context, AppRoutes.notifications),
-            showBadge: true,
+            badgeCount: _notificationCount,
           ),
 
           const SizedBox(width: 8),
 
-          _buildProfileButton(),
+          _buildGuideButton(),
 
           const SizedBox(width: 8),
 
-          // Logout with tooltip
-          _buildAppBarButton(
-            icon: Icons.logout_rounded,
-            onPressed: _handleLogout,
-          ),
+          _buildAccountMenuButton(),
         ],
       ),
     );
@@ -268,6 +287,7 @@ class _HomeScreenState extends State<HomeScreen> {
     required IconData icon,
     required VoidCallback onPressed,
     bool showBadge = false,
+    int badgeCount = 0,
   }) {
     return Material(
       color: Colors.transparent,
@@ -282,23 +302,52 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: Colors.white.withOpacity(0.12), width: 1),
           ),
-          child: showBadge
+          child: badgeCount > 0 || showBadge
               ? Stack(
                   alignment: Alignment.center,
+                  clipBehavior: Clip.none,
                   children: [
                     Center(child: Icon(icon, color: Colors.white, size: 22)),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        width: 9,
-                        height: 9,
-                        decoration: const BoxDecoration(
-                          color: AppColors.accent,
-                          shape: BoxShape.circle,
+                    if (badgeCount > 0)
+                      Positioned(
+                        top: -1,
+                        right: -1,
+                        child: Container(
+                          constraints: const BoxConstraints(
+                            minWidth: 18,
+                            minHeight: 18,
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.accent,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 1.5),
+                          ),
+                          child: Center(
+                            child: Text(
+                              badgeCount > 99 ? '99+' : badgeCount.toString(),
+                              style: AppTextStyles.label.copyWith(
+                                color: AppColors.primaryDark,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 8,
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                    else if (showBadge)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          width: 9,
+                          height: 9,
+                          decoration: const BoxDecoration(
+                            color: AppColors.accent,
+                            shape: BoxShape.circle,
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 )
               : Icon(icon, color: Colors.white, size: 22),
@@ -307,11 +356,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildProfileButton() {
+  Widget _buildGuideButton() {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => Navigator.pushNamed(context, AppRoutes.profile),
+        onTap: () => Navigator.pushNamed(context, AppRoutes.guide),
         borderRadius: BorderRadius.circular(14),
         child: Container(
           width: 40,
@@ -322,15 +371,74 @@ class _HomeScreenState extends State<HomeScreen> {
             border: Border.all(color: Colors.white.withOpacity(0.12), width: 1),
           ),
           child: Center(
-            child: Text(
-              _isLoading ? '...' : _userInitials,
-              style: AppTextStyles.label.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 11,
-              ),
+            child: const Icon(
+              Icons.question_mark_rounded,
+              color: Colors.white,
+              size: 22,
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccountMenuButton() {
+    return PopupMenuButton<_AccountAction>(
+      tooltip: 'Account menu',
+      color: AppColors.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      offset: const Offset(0, 52),
+      onSelected: _openAccountAction,
+      itemBuilder: (context) => [
+        PopupMenuItem<_AccountAction>(
+          value: _AccountAction.profile,
+          child: Row(
+            children: [
+              Icon(Icons.person_outline_rounded, color: AppColors.primary),
+              const SizedBox(width: 12),
+              const Text('Profile'),
+            ],
+          ),
+        ),
+        PopupMenuItem<_AccountAction>(
+          value: _AccountAction.settings,
+          child: Row(
+            children: [
+              Icon(Icons.settings_outlined, color: AppColors.primary),
+              const SizedBox(width: 12),
+              const Text('Settings'),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(height: 1),
+        PopupMenuItem<_AccountAction>(
+          value: _AccountAction.logout,
+          child: Row(
+            children: [
+              Icon(Icons.logout_rounded, color: AppColors.error),
+              const SizedBox(width: 12),
+              Text(
+                'Log Out',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.error,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.14),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withOpacity(0.12), width: 1),
+        ),
+        child: const Icon(
+          Icons.more_vert_rounded,
+          color: Colors.white,
+          size: 22,
         ),
       ),
     );

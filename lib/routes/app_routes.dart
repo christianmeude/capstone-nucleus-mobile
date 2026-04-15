@@ -7,6 +7,8 @@ import '../presentation/screens/auth/splash_screen.dart';
 import '../presentation/screens/home/home_screen.dart';
 import '../presentation/screens/shared/notifications_screen.dart';
 import '../presentation/screens/shared/profile_dashboard_screen.dart';
+import '../presentation/screens/shared/student_settings_screen.dart';
+import '../presentation/screens/shared/student_guide_screen.dart';
 import '../presentation/screens/research/submit_research_screen.dart';
 import '../presentation/screens/research/research_detail_screen.dart';
 import '../data/models/research_model.dart';
@@ -22,11 +24,13 @@ class AppRoutes {
   static const String submitResearch = '/submit-research';
   static const String researchDetail = '/research-detail';
   static const String profile = '/profile';
+  static const String settings = '/settings';
   static const String notifications = '/notifications';
+  static const String guide = '/guide';
 
   // Route generator
-  static Route<dynamic> generateRoute(RouteSettings settings) {
-    switch (settings.name) {
+  static Route<dynamic> generateRoute(RouteSettings routeSettings) {
+    switch (routeSettings.name) {
       case splash:
         return MaterialPageRoute(builder: (_) => const SplashScreen());
       case getStarted:
@@ -42,7 +46,7 @@ class AppRoutes {
       case submitResearch:
         return MaterialPageRoute(builder: (_) => const SubmitResearchScreen());
       case researchDetail:
-        final paper = settings.arguments as ResearchModel;
+        final paper = routeSettings.arguments as ResearchModel;
         return MaterialPageRoute(
           builder: (_) => ResearchDetailScreen(paper: paper),
         );
@@ -50,12 +54,18 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: (_) => const ProfileDashboardScreen(),
         );
+      case AppRoutes.settings:
+        return MaterialPageRoute(builder: (_) => const StudentSettingsScreen());
       case notifications:
         return MaterialPageRoute(builder: (_) => const NotificationsScreen());
+      case guide:
+        return MaterialPageRoute(builder: (_) => const StudentGuideScreen());
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(
-            body: Center(child: Text('No route defined for ${settings.name}')),
+            body: Center(
+              child: Text('No route defined for ${routeSettings.name}'),
+            ),
           ),
         );
     }

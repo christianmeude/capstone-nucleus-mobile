@@ -360,6 +360,15 @@ class _ProfileDashboardScreenState extends State<ProfileDashboardScreen> {
                             AppRoutes.notifications,
                           ),
                         ),
+                        const SizedBox(height: 12),
+                        _ActionCard(
+                          title: 'User Guide',
+                          subtitle: 'Learn how to use the mobile app',
+                          icon: Icons.menu_book_rounded,
+                          color: AppColors.primary,
+                          onTap: () =>
+                              Navigator.pushNamed(context, AppRoutes.guide),
+                        ),
                         const SizedBox(height: 24),
                         Text(
                           'Account Details',
