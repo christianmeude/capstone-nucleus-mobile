@@ -66,6 +66,8 @@ class _SubmitResearchScreenState extends State<SubmitResearchScreen> {
   int? _pickedFileSize;
 
   bool _isSubmitting = false;
+  bool _allowDownload = false;
+  bool _allowHighlight = false;
 
   @override
   void initState() {
@@ -331,6 +333,8 @@ class _SubmitResearchScreenState extends State<SubmitResearchScreen> {
             : _keywordsController.text.trim(),
         category: _selectedCategory!.name,
         coAuthors: coAuthorsString,
+        allowDownload: _allowDownload,
+        allowHighlight: _allowHighlight,
         facultyId: _selectedFaculty?.id,
         department: _selectedDepartment?.name,
         departmentId: _selectedDepartment?.id,
@@ -727,7 +731,142 @@ class _SubmitResearchScreenState extends State<SubmitResearchScreen> {
             .animate()
             .fadeIn(delay: 900.ms, duration: 500.ms)
             .slideY(begin: 0.2, end: 0, curve: Curves.easeOutCubic),
+
+        const SizedBox(height: 18),
+
+        // Paper access permissions (default OFF)
+        _buildPaperAccessPermissions()
+            .animate()
+            .fadeIn(delay: 1000.ms, duration: 500.ms)
+            .slideY(begin: 0.2, end: 0, curve: Curves.easeOutCubic),
       ],
+    );
+  }
+
+  Widget _buildPaperAccessPermissions() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Paper Access Permissions',
+              style: AppTextStyles.label.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Tooltip(
+              message:
+                  'Control whether users can open full-screen/download and highlight this paper after approval.',
+              child: Icon(
+                Icons.info_outline_rounded,
+                size: 16,
+                color: AppColors.textLight,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [AppColors.softShadow],
+          ),
+          child: Column(
+            children: [
+              _buildPermissionTile(
+                icon: Icons.download_rounded,
+                title: 'Allow full-screen/download access',
+                subtitle:
+                    'When off, readers can view metadata but cannot open full-screen/download actions.',
+                value: _allowDownload,
+                onChanged: (value) {
+                  setState(() => _allowDownload = value);
+                },
+              ),
+              Divider(height: 1, color: AppColors.borderLight.withOpacity(0.6)),
+              _buildPermissionTile(
+                icon: Icons.highlight_alt_rounded,
+                title: 'Allow highlighting/selecting text',
+                subtitle:
+                    'When off, text selection and highlighting is disabled in supported viewers.',
+                value: _allowHighlight,
+                onChanged: (value) {
+                  setState(() => _allowHighlight = value);
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Defaults are OFF for privacy-first submissions. You can enable these per paper.',
+          style: AppTextStyles.bodySmall.copyWith(
+            color: AppColors.textLight,
+            fontSize: 11,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPermissionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 2),
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 18, color: AppColors.primary),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Switch.adaptive(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: AppColors.primary,
+            activeTrackColor: AppColors.primary.withOpacity(0.35),
+          ),
+        ],
+      ),
     );
   }
 

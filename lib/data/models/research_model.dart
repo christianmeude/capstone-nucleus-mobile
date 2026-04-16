@@ -18,6 +18,8 @@ class ResearchModel {
   final DateTime? publishedDate;
   final int viewCount;
   final int downloadCount;
+  final bool allowDownload;
+  final bool allowHighlight;
   final String? authorName;
   final String? authorEmail;
 
@@ -41,6 +43,8 @@ class ResearchModel {
     this.publishedDate,
     this.viewCount = 0,
     this.downloadCount = 0,
+    this.allowDownload = true,
+    this.allowHighlight = true,
     this.authorName,
     this.authorEmail,
   });
@@ -116,6 +120,8 @@ class ResearchModel {
           : null,
       viewCount: json['view_count'] is int ? json['view_count'] : 0,
       downloadCount: json['download_count'] is int ? json['download_count'] : 0,
+      allowDownload: _parseBool(json['allow_download'], true),
+      allowHighlight: _parseBool(json['allow_highlight'], true),
       authorName: resolvedAuthorName,
       authorEmail: authorEmail,
     );
@@ -142,7 +148,24 @@ class ResearchModel {
       'published_date': publishedDate?.toIso8601String(),
       'view_count': viewCount,
       'download_count': downloadCount,
+      'allow_download': allowDownload,
+      'allow_highlight': allowHighlight,
     };
+  }
+
+  static bool _parseBool(dynamic value, bool fallback) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == 'true' || normalized == '1' || normalized == 'yes') {
+        return true;
+      }
+      if (normalized == 'false' || normalized == '0' || normalized == 'no') {
+        return false;
+      }
+    }
+    return fallback;
   }
 
   String get statusDisplay {

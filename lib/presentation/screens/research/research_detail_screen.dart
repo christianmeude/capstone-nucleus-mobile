@@ -6,15 +6,21 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../data/models/research_model.dart';
+import '../../../data/repositories/research_repository.dart';
 
 // Web-specific imports
 import 'dart:ui_web' as ui_web;
 import 'dart:html' as html;
 
 class ResearchDetailScreen extends StatefulWidget {
-  final ResearchModel paper;
+  final String paperId;
+  final ResearchModel? initialPaper;
 
-  const ResearchDetailScreen({super.key, required this.paper});
+  const ResearchDetailScreen({
+    super.key,
+    required this.paperId,
+    this.initialPaper,
+  });
 
   @override
   State<ResearchDetailScreen> createState() => _ResearchDetailScreenState();
@@ -22,25 +28,59 @@ class ResearchDetailScreen extends StatefulWidget {
 
 class _ResearchDetailScreenState extends State<ResearchDetailScreen> {
   String? _iframeViewId;
+  ResearchModel? _paper;
+  bool _isLoading = true;
+  String? _loadError;
 
-  ResearchModel get paper => widget.paper;
+  ResearchModel get paper => _paper!;
 
   @override
   void initState() {
     super.initState();
-    if (kIsWeb && paper.fileUrl != null) {
-      _registerIframeView();
+    _paper = widget.initialPaper;
+    _loadPaper();
+  }
+
+  Future<void> _loadPaper() async {
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
+
+    try {
+      final loadedPaper = await ResearchRepository.getResearchById(
+        widget.paperId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _paper = loadedPaper;
+        _isLoading = false;
+      });
+      if (kIsWeb && loadedPaper.fileUrl != null) {
+        _registerIframeView(loadedPaper);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = e.toString();
+        _isLoading = false;
+      });
+
+      if (kIsWeb && _paper?.fileUrl != null) {
+        _registerIframeView(_paper!);
+      }
     }
   }
 
-  void _registerIframeView() {
-    _iframeViewId = 'pdf-preview-${paper.id}';
+  void _registerIframeView(ResearchModel model) {
+    _iframeViewId =
+        'pdf-preview-${model.id}-${DateTime.now().microsecondsSinceEpoch}';
 
     ui_web.platformViewRegistry.registerViewFactory(_iframeViewId!, (
       int viewId,
     ) {
       final iframe = html.IFrameElement()
-        ..src = paper.fileUrl!
+        ..src = model.fileUrl!
         ..style.border = 'none'
         ..style.width = '100%'
         ..style.height = '100%';
@@ -48,8 +88,22 @@ class _ResearchDetailScreenState extends State<ResearchDetailScreen> {
     });
   }
 
+  void _showRestrictedAccessMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: AppColors.warning),
+    );
+  }
+
   Future<void> _openPdfViewer(BuildContext context) async {
     if (paper.fileUrl == null) return;
+
+    if (!paper.allowDownload) {
+      _showRestrictedAccessMessage(
+        'The author disabled download and full-screen access for this paper.',
+      );
+      return;
+    }
 
     // For web, open PDF in a new tab using browser's built-in PDF viewer
     if (kIsWeb) {
@@ -73,14 +127,68 @@ class _ResearchDetailScreenState extends State<ResearchDetailScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            PdfViewerScreen(pdfUrl: paper.fileUrl!, title: paper.title),
+        builder: (context) => PdfViewerScreen(
+          pdfUrl: paper.fileUrl!,
+          title: paper.title,
+          allowHighlight: paper.allowHighlight,
+        ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading && _paper == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+    }
+
+    if (_loadError != null && _paper == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.error_outline_rounded,
+                  color: AppColors.error,
+                  size: 48,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Unable to load paper details',
+                  style: AppTextStyles.heading4.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _loadError!,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: _loadPaper,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
@@ -125,10 +233,14 @@ class _ResearchDetailScreenState extends State<ResearchDetailScreen> {
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               elevation: 4,
-              icon: const Icon(Icons.fullscreen_rounded),
-              label: const Text(
-                'Full Screen',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              icon: Icon(
+                paper.allowDownload
+                    ? Icons.fullscreen_rounded
+                    : Icons.lock_outline_rounded,
+              ),
+              label: Text(
+                paper.allowDownload ? 'Full Screen' : 'Restricted',
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             )
           : null,
@@ -208,12 +320,22 @@ class _ResearchDetailScreenState extends State<ResearchDetailScreen> {
                     // PDF Viewer
                     if (kIsWeb && _iframeViewId != null)
                       HtmlElementView(viewType: _iframeViewId!)
+                    else if (kIsWeb)
+                      Center(
+                        child: Text(
+                          'Preview is loading...',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      )
                     else if (!kIsWeb)
                       SfPdfViewer.network(
                         paper.fileUrl!,
                         canShowScrollHead: false,
                         canShowScrollStatus: false,
                         enableDoubleTapZooming: false,
+                        enableTextSelection: paper.allowHighlight,
                       ),
 
                     // Tap to expand overlay
@@ -256,13 +378,17 @@ class _ResearchDetailScreenState extends State<ResearchDetailScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
-                                    Icons.fullscreen_rounded,
+                                    paper.allowDownload
+                                        ? Icons.fullscreen_rounded
+                                        : Icons.lock_outline_rounded,
                                     color: AppColors.primary,
                                     size: 20,
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'Tap to view full screen',
+                                    paper.allowDownload
+                                        ? 'Tap to view full screen'
+                                        : 'Full screen disabled by author',
                                     style: AppTextStyles.bodySmall.copyWith(
                                       color: AppColors.primary,
                                       fontWeight: FontWeight.w600,
@@ -699,6 +825,14 @@ class _ResearchDetailScreenState extends State<ResearchDetailScreen> {
                     'Submitted',
                     DateFormat.yMMMd().format(paper.createdAt!),
                   ),
+                _buildMetadataRow(
+                  'Download Access',
+                  paper.allowDownload ? 'Allowed' : 'Restricted',
+                ),
+                _buildMetadataRow(
+                  'Highlight Access',
+                  paper.allowHighlight ? 'Allowed' : 'Restricted',
+                ),
               ],
             ),
           ),
@@ -809,8 +943,14 @@ class _ResearchDetailScreenState extends State<ResearchDetailScreen> {
 class PdfViewerScreen extends StatefulWidget {
   final String pdfUrl;
   final String title;
+  final bool allowHighlight;
 
-  const PdfViewerScreen({super.key, required this.pdfUrl, required this.title});
+  const PdfViewerScreen({
+    super.key,
+    required this.pdfUrl,
+    required this.title,
+    this.allowHighlight = true,
+  });
 
   @override
   State<PdfViewerScreen> createState() => _PdfViewerScreenState();
@@ -896,7 +1036,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
             canShowScrollHead: true,
             canShowScrollStatus: true,
             enableDoubleTapZooming: true,
-            enableTextSelection: true,
+            enableTextSelection: widget.allowHighlight,
             onDocumentLoaded: (PdfDocumentLoadedDetails details) {
               setState(() {
                 _isLoading = false;

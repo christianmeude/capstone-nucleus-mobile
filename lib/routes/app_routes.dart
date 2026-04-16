@@ -46,9 +46,24 @@ class AppRoutes {
       case submitResearch:
         return MaterialPageRoute(builder: (_) => const SubmitResearchScreen());
       case researchDetail:
-        final paper = routeSettings.arguments as ResearchModel;
+        final args = routeSettings.arguments;
+        if (args is String) {
+          return MaterialPageRoute(
+            builder: (_) => ResearchDetailScreen(paperId: args),
+          );
+        }
+        if (args is ResearchModel) {
+          return MaterialPageRoute(
+            builder: (_) =>
+                ResearchDetailScreen(paperId: args.id, initialPaper: args),
+          );
+        }
         return MaterialPageRoute(
-          builder: (_) => ResearchDetailScreen(paper: paper),
+          builder: (_) => const Scaffold(
+            body: Center(
+              child: Text('Missing research detail route arguments'),
+            ),
+          ),
         );
       case profile:
         return MaterialPageRoute(

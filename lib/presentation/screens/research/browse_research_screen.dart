@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../data/repositories/research_repository.dart';
@@ -151,6 +152,16 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
   void _clearSearch() {
     _searchController.clear();
     _applyFilters();
+  }
+
+  Future<void> _openPaperDetail(ResearchModel paper) async {
+    await Navigator.pushNamed(
+      context,
+      AppRoutes.researchDetail,
+      arguments: paper.id,
+    );
+    if (!mounted) return;
+    await _loadPapers();
   }
 
   @override
@@ -637,7 +648,10 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
                 final paper = papers[index];
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 16),
-                  child: _PaperCard(paper: paper),
+                  child: _PaperCard(
+                    paper: paper,
+                    onOpenPaper: () => _openPaperDetail(paper),
+                  ),
                 );
               },
             )
@@ -655,7 +669,10 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
               itemCount: papers.length,
               itemBuilder: (context, index) {
                 final paper = papers[index];
-                return _PaperTileCard(paper: paper);
+                return _PaperTileCard(
+                  paper: paper,
+                  onOpenPaper: () => _openPaperDetail(paper),
+                );
               },
             ),
     );
@@ -712,20 +729,17 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
 
 class _PaperCard extends StatelessWidget {
   final ResearchModel paper;
+  final Future<void> Function() onOpenPaper;
 
-  const _PaperCard({required this.paper});
+  const _PaperCard({required this.paper, required this.onOpenPaper});
 
   @override
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {
-          Navigator.pushNamed(
-            context,
-            AppRoutes.researchDetail,
-            arguments: paper,
-          );
+        onTap: () async {
+          await onOpenPaper();
         },
         borderRadius: BorderRadius.circular(16),
         child: Container(
@@ -785,25 +799,48 @@ class _PaperCard extends StatelessWidget {
                             height: 1.4,
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.accent.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            paper.category,
-                            style: AppTextStyles.caption.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 11,
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            if (paper.department != null &&
+                                paper.department!.trim().isNotEmpty)
+                              _MetadataChip(
+                                icon: Icons.account_balance_rounded,
+                                label: paper.department!.trim(),
+                                emphasized: true,
+                              ),
+                            _MetadataChip(
+                              icon: Icons.edit_calendar_rounded,
+                              label:
+                                  'Authored ${_formatCardDate(paper.createdAt)}',
                             ),
-                          ),
+                            _MetadataChip(
+                              icon: Icons.verified_rounded,
+                              label: paper.publishedDate != null
+                                  ? 'Approved ${_formatCardDate(paper.publishedDate)}'
+                                  : 'Approval pending',
+                            ),
+                          ],
                         ),
+                        if (paper.keywords != null &&
+                            paper.keywords!.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              ..._keywordPreview(paper.keywords!, 3).map(
+                                (keyword) => _KeywordBubble(label: keyword),
+                              ),
+                              if (paper.keywords!.length > 3)
+                                _KeywordBubble(
+                                  label: '+${paper.keywords!.length - 3}',
+                                ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -836,25 +873,29 @@ class _PaperCard extends StatelessWidget {
               Row(
                 children: [
                   // Author
-                  if (paper.authorName != null) ...[
-                    Icon(
-                      Icons.person_rounded,
-                      size: 16,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        paper.authorName!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.bodySmall.copyWith(
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.person_rounded,
+                          size: 16,
                           color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w500,
                         ),
-                      ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            _authorSummary(paper.authorName, paper.coAuthors),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
 
                   // Stats
                   Row(
@@ -901,20 +942,17 @@ class _PaperCard extends StatelessWidget {
 
 class _PaperTileCard extends StatelessWidget {
   final ResearchModel paper;
+  final Future<void> Function() onOpenPaper;
 
-  const _PaperTileCard({required this.paper});
+  const _PaperTileCard({required this.paper, required this.onOpenPaper});
 
   @override
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {
-          Navigator.pushNamed(
-            context,
-            AppRoutes.researchDetail,
-            arguments: paper,
-          );
+        onTap: () async {
+          await onOpenPaper();
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(
@@ -934,7 +972,7 @@ class _PaperTileCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                height: 90,
+                height: 78,
                 decoration: BoxDecoration(
                   color: AppColors.primary.withOpacity(0.08),
                   borderRadius: const BorderRadius.only(
@@ -965,16 +1003,58 @@ class _PaperTileCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 6),
-                      if (paper.authorName != null)
-                        Flexible(
-                          child: Text(
-                            paper.authorName!,
-                            style: AppTextStyles.caption.copyWith(
-                              color: AppColors.textSecondary,
-                              fontSize: 10,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                      Text(
+                        _authorSummary(paper.authorName, paper.coAuthors),
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 10,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (paper.department != null &&
+                          paper.department!.trim().isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          paper.department!.trim(),
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 10,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      const SizedBox(height: 4),
+                      Text(
+                        'A: ${_formatCompactCardDate(paper.createdAt)}  P: ${paper.publishedDate != null ? _formatCompactCardDate(paper.publishedDate) : 'Pending'}',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textLight,
+                          fontSize: 9,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (paper.keywords != null && paper.keywords!.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Wrap(
+                            spacing: 4,
+                            runSpacing: 4,
+                            children: [
+                              ..._keywordPreview(paper.keywords!, 2).map(
+                                (keyword) => _KeywordBubble(
+                                  label: keyword,
+                                  compact: true,
+                                ),
+                              ),
+                              if (paper.keywords!.length > 2)
+                                _KeywordBubble(
+                                  label: '+${paper.keywords!.length - 2}',
+                                  compact: true,
+                                ),
+                            ],
                           ),
                         ),
                     ],
@@ -987,4 +1067,127 @@ class _PaperTileCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _MetadataChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool emphasized;
+
+  const _MetadataChip({
+    required this.icon,
+    required this.label,
+    this.emphasized = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: emphasized
+            ? AppColors.accent.withOpacity(0.18)
+            : AppColors.background,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: emphasized
+              ? AppColors.accent.withOpacity(0.35)
+              : AppColors.borderLight,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 12,
+            color: emphasized ? AppColors.primary : AppColors.textSecondary,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: AppTextStyles.caption.copyWith(
+              color: emphasized ? AppColors.primary : AppColors.textSecondary,
+              fontWeight: emphasized ? FontWeight.w600 : FontWeight.w500,
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _KeywordBubble extends StatelessWidget {
+  final String label;
+  final bool compact;
+
+  const _KeywordBubble({required this.label, this.compact = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 6 : 8,
+        vertical: compact ? 3 : 4,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.primary.withOpacity(0.25)),
+      ),
+      child: Text(
+        label,
+        style: AppTextStyles.caption.copyWith(
+          color: AppColors.primary,
+          fontWeight: FontWeight.w600,
+          fontSize: compact ? 9 : 10,
+        ),
+      ),
+    );
+  }
+}
+
+String _authorSummary(String? authorName, String? coAuthors) {
+  final author = authorName == null || authorName.trim().isEmpty
+      ? 'Unknown author'
+      : authorName.trim();
+  final coAuthorCount = _coAuthorCount(coAuthors);
+  if (coAuthorCount == 0) {
+    return author;
+  }
+  return '$author + $coAuthorCount co-author${coAuthorCount == 1 ? '' : 's'}';
+}
+
+int _coAuthorCount(String? coAuthors) {
+  if (coAuthors == null || coAuthors.trim().isEmpty) {
+    return 0;
+  }
+  return coAuthors
+      .split(',')
+      .map((name) => name.trim())
+      .where((name) => name.isNotEmpty)
+      .length;
+}
+
+List<String> _keywordPreview(List<String> keywords, int limit) {
+  return keywords
+      .map((keyword) => keyword.trim())
+      .where((keyword) => keyword.isNotEmpty)
+      .take(limit)
+      .toList();
+}
+
+String _formatCardDate(DateTime? date) {
+  if (date == null) {
+    return 'N/A';
+  }
+  return DateFormat.yMMMd().format(date);
+}
+
+String _formatCompactCardDate(DateTime? date) {
+  if (date == null) {
+    return 'N/A';
+  }
+  return DateFormat.MMMd().format(date);
 }

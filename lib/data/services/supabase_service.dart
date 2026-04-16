@@ -505,20 +505,27 @@ class SupabaseService {
 
   /// Get a single research paper by ID
   static Future<ResearchModel> getResearchById(String id) async {
-    final response = await client
+    final initialResponse = await client
         .from('research_papers')
         .select('*, users!author_id(email)')
         .eq('id', id)
         .maybeSingle();
 
-    if (response == null) {
+    if (initialResponse == null) {
       throw Exception('Research paper not found');
     }
 
     // Increment view count
     await client.rpc('increment_view_count', params: {'row_id': id});
 
-    return ResearchModel.fromJson(response);
+    // Refetch to return updated counters after increment
+    final refreshedResponse = await client
+        .from('research_papers')
+        .select('*, users!author_id(email)')
+        .eq('id', id)
+        .maybeSingle();
+
+    return ResearchModel.fromJson(refreshedResponse ?? initialResponse);
   }
 
   /// Submit new research
@@ -528,6 +535,8 @@ class SupabaseService {
     String? keywords,
     required String category,
     String? coAuthors,
+    bool allowDownload = false,
+    bool allowHighlight = false,
     required Uint8List fileBytes,
     required String filename,
     String? facultyId,
@@ -582,6 +591,8 @@ class SupabaseService {
       'faculty_id': facultyId,
       'department': department,
       'department_id': departmentId,
+      'allow_download': allowDownload,
+      'allow_highlight': allowHighlight,
     });
   }
 
