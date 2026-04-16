@@ -4,56 +4,113 @@ Student research repository app for National University - Dasmarinas.
 
 NUcleus Mobile helps students discover published research, submit capstone and research outputs, and track personal research performance from mobile devices.
 
+---
+
+## Project Overview
+
+NUcleus Mobile is a student-focused research platform that combines discovery, submission, and analytics into a single mobile workflow.
+
+Core goals:
+- Make published research easier to explore through search and metadata-rich cards.
+- Support structured paper submission with PDF upload and workflow-ready metadata.
+- Provide transparent tracking for engagement metrics such as views and downloads.
+- Enable paper-level access controls for download and highlighting permissions.
+
+---
+
 ## Scope
 
-- Student-facing mobile experience only.
+- Student-facing mobile experience.
 - Browse and search approved research papers.
 - Submit research papers with PDF upload.
-- View own papers and analytics.
+- View own papers and personal analytics.
 
-## Features
+---
 
-- Authentication flow: splash, get started, login, and registration.
-- Explore Research screen with search and filters.
-- Research detail with in-app PDF viewing.
-- Submit Research with category selection, adviser selection, and co-author search.
-- My Papers management.
-- Analytics for views, downloads, and status distribution.
+## Feature Breakdown
+
+### Authentication and Onboarding
+- Splash, get-started, login, and registration flow.
+
+### Explore Research
+- Search and filter published papers.
+- List/tile view modes.
+- Metadata-rich paper cards (author, department, dates, keywords, metrics).
+
+### Research Detail and Document Viewing
+- Detailed paper metadata and abstract.
+- In-app PDF viewing.
+- View/download metrics display.
+
+### Submission Workflow
+- Research submission with category and department.
+- Co-author lookup and selection.
+- PDF upload and metadata persistence.
+- Author-controlled paper access flags:
+  - allow download/full-screen access
+  - allow text highlight/selection
+
+### My Papers and Analytics
+- Personal paper management.
+- Status tracking and metric summaries.
+
+---
 
 ## Tech Stack
 
-- Flutter and Dart
-- Supabase backend and storage
-- flutter_riverpod, shared_preferences, file_picker
-- syncfusion_flutter_pdfviewer, flutter_animate, shimmer, lottie
+| Layer | Technology |
+| :--- | :--- |
+| Framework | Flutter, Dart |
+| Backend | Supabase (database, auth, storage) |
+| State and Local Storage | flutter_riverpod, shared_preferences |
+| File and Document Handling | file_picker, syncfusion_flutter_pdfviewer |
+| UI and Motion | flutter_animate, shimmer, lottie |
 
-## Installation
+---
 
-1. Clone the repository:
+## Getting Started
 
-   git clone https://github.com/malfoydevera/capstone-nucleus-mobile.git
-   cd capstone-nucleus-mobile
+### 1) Clone the Repository
 
-2. Install dependencies:
+```bash
+git clone https://github.com/christianmeude/capstone-nucleus-mobile.git
+```
 
-   flutter pub get
+### 2) Install Dependencies
 
-3. Create a .env file in the project root:
+```bash
+flutter pub get
+```
 
-   SUPABASE_URL=your_supabase_project_url
-   SUPABASE_ANON_KEY=your_supabase_anon_key
+### 3) Configure Environment Variables
 
-4. Run the app:
+Create a `.env` file in the project root:
 
-   flutter run
+```env
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### 4) Run the App
+
+```bash
+flutter run
+```
+
+---
 
 ## Documentation
 
-- docs/01-cld-mobile.md
-- docs/02-dfd-level-1-mobile.md
-- docs/03-dfd-level-2-mobile.md
-- docs/04-hipo-mobile.md
-- docs/05-erd-mobile.md
+System design and analysis docs are available under the `docs/` directory:
+
+- `docs/01-cld-mobile.md` - Context-Level Diagram
+- `docs/02-dfd-level-1-mobile.md` - DFD Level 1
+- `docs/03-dfd-level-2-mobile.md` - DFD Level 2
+- `docs/04-hipo-mobile.md` - HIPO
+- `docs/05-erd-mobile.md` - ERD
+- `docs/06-research-permissions-migration.sql` - Permission columns migration script
+
+---
 
 ## Team
 
@@ -64,4 +121,5 @@ NUcleus Mobile helps students discover published research, submit capstone and r
 | Mobile App Developer | Christian Meude | Flutter architecture and implementation |
 
 ---
-Developed for National University - Dasmarinas, BS Information Technology
+
+*Developed for National University - Dasmarinas, BS Information Technology.*
