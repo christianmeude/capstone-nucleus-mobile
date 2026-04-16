@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
@@ -727,212 +728,255 @@ class _BrowseResearchScreenState extends State<BrowseResearchScreen> {
   }
 }
 
-class _PaperCard extends StatelessWidget {
+class _PaperCard extends StatefulWidget {
   final ResearchModel paper;
   final Future<void> Function() onOpenPaper;
 
   const _PaperCard({required this.paper, required this.onOpenPaper});
 
   @override
+  State<_PaperCard> createState() => _PaperCardState();
+}
+
+class _PaperCardState extends State<_PaperCard> {
+  bool _isHovered = false;
+  bool _isPressed = false;
+
+  bool get _isFocused => _isHovered || _isPressed;
+
+  @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () async {
-          await onOpenPaper();
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.borderLight, width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+    final paper = widget.paper;
+
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      scale: _isFocused ? 1.012 : 1,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _isFocused
+                ? AppColors.primary.withOpacity(0.2)
+                : AppColors.borderLight,
+            width: 1,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header Row
-              Row(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(_isFocused ? 0.08 : 0.04),
+              blurRadius: _isFocused ? 18 : 12,
+              offset: Offset(0, _isFocused ? 7 : 4),
+            ),
+            if (_isFocused)
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.08),
+                blurRadius: 12,
+                spreadRadius: 1,
+              ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () async {
+              await widget.onOpenPaper();
+            },
+            onHover: (value) {
+              if (_isHovered == value) return;
+              setState(() => _isHovered = value);
+            },
+            onHighlightChanged: (value) {
+              if (_isPressed == value) return;
+              setState(() => _isPressed = value);
+            },
+            onLongPress: () {
+              HapticFeedback.lightImpact();
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Document Icon
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [AppColors.primary, AppColors.primaryLight],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.article_rounded,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-
-                  const SizedBox(width: 14),
-
-                  // Title & Category
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          paper.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                            height: 1.4,
+                  // Header Row
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Document Icon
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [AppColors.primary, AppColors.primaryLight],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
+                        child: const Icon(
+                          Icons.article_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+
+                      const SizedBox(width: 14),
+
+                      // Title & Metadata
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            Text(
+                              paper.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                                height: 1.35,
+                              ),
+                            ),
+                            const SizedBox(height: 7),
+                            _MetaLine(
+                              icon: Icons.person_rounded,
+                              text: _authorSummary(
+                                paper.authorName,
+                                paper.coAuthors,
+                              ),
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11,
+                            ),
                             if (paper.department != null &&
                                 paper.department!.trim().isNotEmpty)
-                              _MetadataChip(
-                                icon: Icons.account_balance_rounded,
-                                label: paper.department!.trim(),
-                                emphasized: true,
+                              Padding(
+                                padding: const EdgeInsets.only(top: 3),
+                                child: _MetaLine(
+                                  icon: Icons.account_balance_rounded,
+                                  text: paper.department!.trim(),
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 10.5,
+                                ),
                               ),
-                            _MetadataChip(
-                              icon: Icons.edit_calendar_rounded,
-                              label:
-                                  'Authored ${_formatCardDate(paper.createdAt)}',
+                            Padding(
+                              padding: const EdgeInsets.only(top: 3),
+                              child: _MetaLine(
+                                icon: Icons.edit_calendar_rounded,
+                                text:
+                                    'Authored ${_formatCardDate(paper.createdAt)}',
+                                color: AppColors.textLight,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 9.5,
+                              ),
                             ),
-                            _MetadataChip(
-                              icon: Icons.verified_rounded,
-                              label: paper.publishedDate != null
-                                  ? 'Approved ${_formatCardDate(paper.publishedDate)}'
-                                  : 'Approval pending',
+                            Padding(
+                              padding: const EdgeInsets.only(top: 3),
+                              child: _MetaLine(
+                                icon: paper.publishedDate != null
+                                    ? Icons.verified_rounded
+                                    : Icons.schedule_rounded,
+                                text: paper.publishedDate != null
+                                    ? 'Approved ${_formatCardDate(paper.publishedDate)}'
+                                    : 'Approval pending',
+                                color: AppColors.textLight,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 9.5,
+                              ),
                             ),
                           ],
                         ),
-                        if (paper.keywords != null &&
-                            paper.keywords!.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
-                            children: [
-                              ..._keywordPreview(paper.keywords!, 3).map(
-                                (keyword) => _KeywordBubble(label: keyword),
-                              ),
-                              if (paper.keywords!.length > 3)
-                                _KeywordBubble(
-                                  label: '+${paper.keywords!.length - 3}',
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Divider
+                  Container(height: 1, color: AppColors.borderLight),
+
+                  const SizedBox(height: 12),
+
+                  // Footer Row - Keywords & Stats
+                  Row(
+                    children: [
+                      // Keywords
+                      Expanded(
+                        child:
+                            paper.keywords != null && paper.keywords!.isNotEmpty
+                            ? SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: [
+                                    ..._keywordPreview(paper.keywords!, 3).map(
+                                      (keyword) => Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 6,
+                                        ),
+                                        child: _KeywordBubble(label: keyword),
+                                      ),
+                                    ),
+                                    if (paper.keywords!.length > 3)
+                                      _KeywordBubble(
+                                        label: '+${paper.keywords!.length - 3}',
+                                      ),
+                                  ],
                                 ),
-                            ],
+                              )
+                            : Text(
+                                'No keywords',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.textLight,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                      ),
+
+                      // Stats
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.visibility_rounded,
+                            size: 14,
+                            color: AppColors.textLight,
                           ),
-                        ],
-                      ],
-                    ),
-                  ),
-
-                  // Arrow
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.arrow_forward_rounded,
-                      color: AppColors.primary,
-                      size: 18,
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 14),
-
-              // Divider
-              Container(height: 1, color: AppColors.borderLight),
-
-              const SizedBox(height: 12),
-
-              // Footer Row - Author & Stats
-              Row(
-                children: [
-                  // Author
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.person_rounded,
-                          size: 16,
-                          color: AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            _authorSummary(paper.authorName, paper.coAuthors),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: AppColors.textSecondary,
+                          const SizedBox(width: 4),
+                          Text(
+                            '${paper.viewCount}',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.textLight,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Stats
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.visibility_rounded,
-                        size: 14,
-                        color: AppColors.textLight,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${paper.viewCount}',
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.textLight,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Icon(
-                        Icons.download_rounded,
-                        size: 14,
-                        color: AppColors.textLight,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${paper.downloadCount}',
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.textLight,
-                          fontWeight: FontWeight.w500,
-                        ),
+                          const SizedBox(width: 12),
+                          Icon(
+                            Icons.download_rounded,
+                            size: 14,
+                            color: AppColors.textLight,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${paper.downloadCount}',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.textLight,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -940,128 +984,192 @@ class _PaperCard extends StatelessWidget {
   }
 }
 
-class _PaperTileCard extends StatelessWidget {
+class _PaperTileCard extends StatefulWidget {
   final ResearchModel paper;
   final Future<void> Function() onOpenPaper;
 
   const _PaperTileCard({required this.paper, required this.onOpenPaper});
 
   @override
+  State<_PaperTileCard> createState() => _PaperTileCardState();
+}
+
+class _PaperTileCardState extends State<_PaperTileCard> {
+  bool _isHovered = false;
+  bool _isPressed = false;
+
+  bool get _isFocused => _isHovered || _isPressed;
+
+  @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () async {
-          await onOpenPaper();
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.borderLight, width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+    final paper = widget.paper;
+
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      scale: _isFocused ? 1.015 : 1,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _isFocused
+                ? AppColors.primary.withOpacity(0.2)
+                : AppColors.borderLight,
+            width: 1,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                height: 78,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.08),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(_isFocused ? 0.08 : 0.04),
+              blurRadius: _isFocused ? 12 : 8,
+              offset: Offset(0, _isFocused ? 5 : 2),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () async {
+              await widget.onOpenPaper();
+            },
+            onHover: (value) {
+              if (_isHovered == value) return;
+              setState(() => _isHovered = value);
+            },
+            onHighlightChanged: (value) {
+              if (_isPressed == value) return;
+              setState(() => _isPressed = value);
+            },
+            onLongPress: () {
+              HapticFeedback.lightImpact();
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  height: 78,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.08),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
+                    ),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.description_rounded,
+                      color: AppColors.primary,
+                      size: 32,
+                    ),
                   ),
                 ),
-                child: Center(
-                  child: Icon(
-                    Icons.description_rounded,
-                    color: AppColors.primary,
-                    size: 32,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        paper.title,
-                        style: AppTextStyles.bodySmall.copyWith(
-                          fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          paper.title,
+                          style: AppTextStyles.bodySmall.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _authorSummary(paper.authorName, paper.coAuthors),
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.textSecondary,
-                          fontSize: 10,
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.person_rounded,
+                              size: 10,
+                              color: AppColors.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                _authorSummary(
+                                  paper.authorName,
+                                  paper.coAuthors,
+                                ),
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 10,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (paper.department != null &&
-                          paper.department!.trim().isNotEmpty) ...[
+                        if (paper.department != null &&
+                            paper.department!.trim().isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.account_balance_rounded,
+                                size: 10,
+                                color: AppColors.textPrimary,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  paper.department!.trim(),
+                                  style: AppTextStyles.caption.copyWith(
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 10,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                         const SizedBox(height: 4),
                         Text(
-                          paper.department!.trim(),
+                          'A: ${_formatCompactCardDate(paper.createdAt)}  P: ${paper.publishedDate != null ? _formatCompactCardDate(paper.publishedDate) : 'Pending'}',
                           style: AppTextStyles.caption.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 10,
+                            color: AppColors.textLight,
+                            fontSize: 9,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                      const SizedBox(height: 4),
-                      Text(
-                        'A: ${_formatCompactCardDate(paper.createdAt)}  P: ${paper.publishedDate != null ? _formatCompactCardDate(paper.publishedDate) : 'Pending'}',
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.textLight,
-                          fontSize: 9,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (paper.keywords != null && paper.keywords!.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Wrap(
-                            spacing: 4,
-                            runSpacing: 4,
-                            children: [
-                              ..._keywordPreview(paper.keywords!, 2).map(
-                                (keyword) => _KeywordBubble(
-                                  label: keyword,
-                                  compact: true,
+                        if (paper.keywords != null &&
+                            paper.keywords!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Wrap(
+                              spacing: 4,
+                              runSpacing: 4,
+                              children: [
+                                ..._keywordPreview(paper.keywords!, 2).map(
+                                  (keyword) => _KeywordBubble(
+                                    label: keyword,
+                                    compact: true,
+                                  ),
                                 ),
-                              ),
-                              if (paper.keywords!.length > 2)
-                                _KeywordBubble(
-                                  label: '+${paper.keywords!.length - 2}',
-                                  compact: true,
-                                ),
-                            ],
+                                if (paper.keywords!.length > 2)
+                                  _KeywordBubble(
+                                    label: '+${paper.keywords!.length - 2}',
+                                    compact: true,
+                                  ),
+                              ],
+                            ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -1069,51 +1177,40 @@ class _PaperTileCard extends StatelessWidget {
   }
 }
 
-class _MetadataChip extends StatelessWidget {
+class _MetaLine extends StatelessWidget {
   final IconData icon;
-  final String label;
-  final bool emphasized;
+  final String text;
+  final Color color;
+  final FontWeight fontWeight;
+  final double fontSize;
 
-  const _MetadataChip({
+  const _MetaLine({
     required this.icon,
-    required this.label,
-    this.emphasized = false,
+    required this.text,
+    required this.color,
+    required this.fontWeight,
+    required this.fontSize,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: emphasized
-            ? AppColors.accent.withOpacity(0.18)
-            : AppColors.background,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: emphasized
-              ? AppColors.accent.withOpacity(0.35)
-              : AppColors.borderLight,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 12,
-            color: emphasized ? AppColors.primary : AppColors.textSecondary,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            label,
+    return Row(
+      children: [
+        Icon(icon, size: 13, color: color),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: AppTextStyles.caption.copyWith(
-              color: emphasized ? AppColors.primary : AppColors.textSecondary,
-              fontWeight: emphasized ? FontWeight.w600 : FontWeight.w500,
-              fontSize: 10,
+              color: color,
+              fontWeight: fontWeight,
+              fontSize: fontSize,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -1132,14 +1229,14 @@ class _KeywordBubble extends StatelessWidget {
         vertical: compact ? 3 : 4,
       ),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
+        color: AppColors.accent.withOpacity(0.22),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.primary.withOpacity(0.25)),
+        border: Border.all(color: AppColors.accentDark.withOpacity(0.55)),
       ),
       child: Text(
         label,
         style: AppTextStyles.caption.copyWith(
-          color: AppColors.primary,
+          color: AppColors.primaryDark,
           fontWeight: FontWeight.w600,
           fontSize: compact ? 9 : 10,
         ),
