@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../data/repositories/research_repository.dart';
 
 class PdfViewerScreen extends StatefulWidget {
+  final String paperId;
   final String pdfUrl;
   final String title;
+  final bool allowHighlight;
 
   const PdfViewerScreen({
     super.key,
+    required this.paperId,
     required this.pdfUrl,
     required this.title,
+    this.allowHighlight = false,
   });
 
   @override
@@ -23,6 +28,20 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   String? _error;
   int _currentPage = 1;
   int _totalPages = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _trackDownload();
+  }
+
+  Future<void> _trackDownload() async {
+    try {
+      await ResearchRepository.trackDownload(widget.paperId);
+    } catch (_) {
+      // The viewer should still open if tracking fails.
+    }
+  }
 
   @override
   void dispose() {
@@ -91,6 +110,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
               canShowScrollHead: true,
               canShowScrollStatus: true,
               enableDoubleTapZooming: true,
+                enableTextSelection: widget.allowHighlight,
               onDocumentLoaded: (details) {
                 setState(() {
                   _isLoading = false;

@@ -87,14 +87,23 @@ flutter pub get
 Create a `.env` file in the project root:
 
 ```env
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
+# Set this to the backend host for the platform you are running.
+# Web/desktop: http://localhost:5001/api
+# Android emulator: http://10.0.2.2:5001/api
+# Physical device: http://<your-lan-ip>:5001/api
+API_URL=http://localhost:5001/api
 ```
 
 ### 4) Run the App
 
 ```bash
 flutter run
+```
+
+For Flutter web in Chrome, use the auto-port launcher so it picks a free backend-allowed origin:
+
+```bash
+PowerShell -ExecutionPolicy Bypass -File .\scripts\run_flutter_web.ps1
 ```
 
 ---

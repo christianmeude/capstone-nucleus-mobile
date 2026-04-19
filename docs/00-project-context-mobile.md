@@ -321,7 +321,7 @@ The visual language should stay academic and readable rather than decorative.
 
 ### Backend And Network Dependencies
 
-- `supabase_flutter`
+- `http`
 - `file_picker`
 - `open_filex`
 - `syncfusion_flutter_pdfviewer`

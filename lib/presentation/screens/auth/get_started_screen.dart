@@ -42,10 +42,16 @@ class _GetStartedScreenState extends State<GetStartedScreen> {
   Future<void> _checkLoginStatus() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString(StorageKeys.userId);
+    final accessToken = prefs.getString(StorageKeys.accessToken);
+    final refreshToken = prefs.getString(StorageKeys.refreshToken);
     final hasSeenOnboarding =
         prefs.getBool(StorageKeys.hasSeenOnboarding) ?? false;
 
-    if (userId != null && mounted) {
+    final hasSession = (userId ?? '').isNotEmpty ||
+        (accessToken ?? '').isNotEmpty ||
+        (refreshToken ?? '').isNotEmpty;
+
+    if (hasSession && mounted) {
       Navigator.pushReplacementNamed(context, AppRoutes.home);
     } else if (hasSeenOnboarding && mounted) {
       Navigator.pushReplacementNamed(context, AppRoutes.landing);

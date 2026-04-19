@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:intl/intl.dart';
@@ -7,10 +9,6 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../data/models/research_model.dart';
 import '../../../data/repositories/research_repository.dart';
-
-// Web-specific imports
-import 'dart:ui_web' as ui_web;
-import 'dart:html' as html;
 
 class ResearchDetailScreen extends StatefulWidget {
   final String paperId;
@@ -27,10 +25,10 @@ class ResearchDetailScreen extends StatefulWidget {
 }
 
 class _ResearchDetailScreenState extends State<ResearchDetailScreen> {
-  String? _iframeViewId;
   ResearchModel? _paper;
   bool _isLoading = true;
   String? _loadError;
+  int _viewCount = 0;
 
   ResearchModel get paper => _paper!;
 
@@ -38,6 +36,7 @@ class _ResearchDetailScreenState extends State<ResearchDetailScreen> {
   void initState() {
     super.initState();
     _paper = widget.initialPaper;
+    _viewCount = widget.initialPaper?.viewCount ?? 0;
     _loadPaper();
   }
 
@@ -54,38 +53,29 @@ class _ResearchDetailScreenState extends State<ResearchDetailScreen> {
       if (!mounted) return;
       setState(() {
         _paper = loadedPaper;
+        _viewCount = loadedPaper.viewCount;
         _isLoading = false;
       });
-      if (kIsWeb && loadedPaper.fileUrl != null) {
-        _registerIframeView(loadedPaper);
-      }
+      unawaited(_trackView());
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _loadError = e.toString();
         _isLoading = false;
       });
-
-      if (kIsWeb && _paper?.fileUrl != null) {
-        _registerIframeView(_paper!);
-      }
     }
   }
 
-  void _registerIframeView(ResearchModel model) {
-    _iframeViewId =
-        'pdf-preview-${model.id}-${DateTime.now().microsecondsSinceEpoch}';
-
-    ui_web.platformViewRegistry.registerViewFactory(_iframeViewId!, (
-      int viewId,
-    ) {
-      final iframe = html.IFrameElement()
-        ..src = model.fileUrl!
-        ..style.border = 'none'
-        ..style.width = '100%'
-        ..style.height = '100%';
-      return iframe;
-    });
+  Future<void> _trackView() async {
+    try {
+      await ResearchRepository.trackView(widget.paperId);
+      if (!mounted) return;
+      setState(() {
+        _viewCount += 1;
+      });
+    } catch (e) {
+      debugPrint('Failed to track view: $e');
+    }
   }
 
   void _showRestrictedAccessMessage(String message) {
@@ -107,6 +97,12 @@ class _ResearchDetailScreenState extends State<ResearchDetailScreen> {
 
     // For web, open PDF in a new tab using browser's built-in PDF viewer
     if (kIsWeb) {
+      try {
+        await ResearchRepository.trackDownload(paper.id);
+      } catch (_) {
+        // Keep the viewer usable even if download tracking fails.
+      }
+
       final url = Uri.parse(paper.fileUrl!);
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
@@ -128,6 +124,7 @@ class _ResearchDetailScreenState extends State<ResearchDetailScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => PdfViewerScreen(
+          paperId: paper.id,
           pdfUrl: paper.fileUrl!,
           title: paper.title,
           allowHighlight: paper.allowHighlight,
@@ -318,25 +315,13 @@ class _ResearchDetailScreenState extends State<ResearchDetailScreen> {
                 child: Stack(
                   children: [
                     // PDF Viewer
-                    if (kIsWeb && _iframeViewId != null)
-                      HtmlElementView(viewType: _iframeViewId!)
-                    else if (kIsWeb)
-                      Center(
-                        child: Text(
-                          'Preview is loading...',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      )
-                    else if (!kIsWeb)
-                      SfPdfViewer.network(
-                        paper.fileUrl!,
-                        canShowScrollHead: false,
-                        canShowScrollStatus: false,
-                        enableDoubleTapZooming: false,
-                        enableTextSelection: paper.allowHighlight,
-                      ),
+                    SfPdfViewer.network(
+                      paper.fileUrl!,
+                      canShowScrollHead: false,
+                      canShowScrollStatus: false,
+                      enableDoubleTapZooming: false,
+                      enableTextSelection: paper.allowHighlight,
+                    ),
 
                     // Tap to expand overlay
                     Positioned(
@@ -641,7 +626,7 @@ class _ResearchDetailScreenState extends State<ResearchDetailScreen> {
           Expanded(
             child: _buildStatCard(
               icon: Icons.visibility_rounded,
-              value: _formatNumber(paper.viewCount),
+              value: _formatNumber(_viewCount),
               label: 'Views',
               color: AppColors.info,
             ),
@@ -941,12 +926,14 @@ class _ResearchDetailScreenState extends State<ResearchDetailScreen> {
 
 /// Full-screen PDF Viewer Screen
 class PdfViewerScreen extends StatefulWidget {
+  final String paperId;
   final String pdfUrl;
   final String title;
   final bool allowHighlight;
 
   const PdfViewerScreen({
     super.key,
+    required this.paperId,
     required this.pdfUrl,
     required this.title,
     this.allowHighlight = true,
@@ -963,6 +950,20 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   String? _error;
   int _currentPage = 1;
   int _totalPages = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_trackDownload());
+  }
+
+  Future<void> _trackDownload() async {
+    try {
+      await ResearchRepository.trackDownload(widget.paperId);
+    } catch (e) {
+      debugPrint('Failed to track download: $e');
+    }
+  }
 
   @override
   void dispose() {

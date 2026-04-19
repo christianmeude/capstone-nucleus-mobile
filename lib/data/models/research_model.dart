@@ -43,32 +43,22 @@ class ResearchModel {
     this.publishedDate,
     this.viewCount = 0,
     this.downloadCount = 0,
-    this.allowDownload = true,
-    this.allowHighlight = true,
+    this.allowDownload = false,
+    this.allowHighlight = false,
     this.authorName,
     this.authorEmail,
   });
 
   factory ResearchModel.fromJson(Map<String, dynamic> json) {
-    final users = json['users'] is Map<String, dynamic>
-        ? json['users'] as Map<String, dynamic>
-        : (json['users'] is Map
-              ? Map<String, dynamic>.from(json['users'] as Map)
-              : null);
+    final users = _asMap(json['users']);
+    final author = _asMap(json['author']);
 
-    final author = json['author'] is Map<String, dynamic>
-        ? json['author'] as Map<String, dynamic>
-        : (json['author'] is Map
-              ? Map<String, dynamic>.from(json['author'] as Map)
-              : null);
+    final authorEmail = _stringFrom(users, 'email') ?? _stringFrom(author, 'email');
 
-    final authorEmail =
-        users?['email']?.toString() ?? author?['email']?.toString();
-
-    final usersFirst = users?['first_name']?.toString().trim() ?? '';
-    final usersLast = users?['last_name']?.toString().trim() ?? '';
-    final usersFull = users?['full_name']?.toString().trim() ?? '';
-    final authorFull = author?['full_name']?.toString().trim() ?? '';
+    final usersFirst = _stringFrom(users, 'first_name') ?? _stringFrom(users, 'firstName') ?? '';
+    final usersLast = _stringFrom(users, 'last_name') ?? _stringFrom(users, 'lastName') ?? '';
+    final usersFull = _stringFrom(users, 'full_name') ?? _stringFrom(users, 'fullName') ?? '';
+    final authorFull = _stringFrom(author, 'full_name') ?? _stringFrom(author, 'fullName') ?? '';
 
     final composedName = [
       usersFirst,
@@ -87,8 +77,8 @@ class ResearchModel {
     }
 
     return ResearchModel(
-      id: json['id']?.toString() ?? '',
-      authorId: json['author_id']?.toString() ?? '',
+      id: json['id']?.toString() ?? json['researchId']?.toString() ?? '',
+      authorId: json['author_id']?.toString() ?? json['authorId']?.toString() ?? '',
       title: json['title']?.toString() ?? 'Untitled',
       abstract: json['abstract']?.toString() ?? '',
       keywords: json['keywords'] != null
@@ -99,29 +89,37 @@ class ResearchModel {
                 : <String>[])
           : null,
       category: json['category']?.toString() ?? '',
-      coAuthors: json['co_authors']?.toString(),
-      fileUrl: json['file_url']?.toString(),
-      fileName: json['file_name']?.toString(),
-      fileSize: json['file_size'] is int ? json['file_size'] : null,
+      coAuthors: json['co_authors']?.toString() ?? json['coAuthors']?.toString(),
+      fileUrl: json['file_url']?.toString() ?? json['fileUrl']?.toString(),
+      fileName: json['file_name']?.toString() ?? json['fileName']?.toString(),
+      fileSize: _parseInt(json['file_size']) ?? _parseInt(json['fileSize']),
       status: json['status']?.toString() ?? 'pending',
-      facultyId: json['faculty_id']?.toString(),
+      facultyId: json['faculty_id']?.toString() ?? json['facultyId']?.toString(),
       department: json['department']?.toString(),
-      revisionNotes: json['revision_notes']?.toString(),
-      rejectionReason: json['rejection_reason']?.toString(),
+      revisionNotes: json['revision_notes']?.toString() ?? json['revisionNotes']?.toString(),
+      rejectionReason: json['rejection_reason']?.toString() ?? json['rejectionReason']?.toString(),
       createdAt: json['created_at'] != null
           ? (json['created_at'] is DateTime
                 ? json['created_at']
                 : DateTime.tryParse(json['created_at'].toString()))
+          : json['createdAt'] != null
+              ? (json['createdAt'] is DateTime
+                    ? json['createdAt']
+                    : DateTime.tryParse(json['createdAt'].toString()))
           : null,
       publishedDate: json['published_date'] != null
           ? (json['published_date'] is DateTime
                 ? json['published_date']
                 : DateTime.tryParse(json['published_date'].toString()))
+          : json['publishedAt'] != null
+              ? (json['publishedAt'] is DateTime
+                    ? json['publishedAt']
+                    : DateTime.tryParse(json['publishedAt'].toString()))
           : null,
-      viewCount: json['view_count'] is int ? json['view_count'] : 0,
-      downloadCount: json['download_count'] is int ? json['download_count'] : 0,
-      allowDownload: _parseBool(json['allow_download'], true),
-      allowHighlight: _parseBool(json['allow_highlight'], true),
+      viewCount: _parseInt(json['view_count']) ?? _parseInt(json['viewCount']) ?? 0,
+      downloadCount: _parseInt(json['download_count']) ?? _parseInt(json['downloadCount']) ?? 0,
+      allowDownload: _parseBool(json['allow_download'], false),
+      allowHighlight: _parseBool(json['allow_highlight'] ?? json['allowHighlight'], false),
       authorName: resolvedAuthorName,
       authorEmail: authorEmail,
     );
@@ -166,6 +164,22 @@ class ResearchModel {
       }
     }
     return fallback;
+  }
+
+  static Map<String, dynamic>? _asMap(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) return Map<String, dynamic>.from(value);
+    return null;
+  }
+
+  static String? _stringFrom(Map<String, dynamic>? source, String key) {
+    return source?[key]?.toString().trim();
+  }
+
+  static int? _parseInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '');
   }
 
   String get statusDisplay {

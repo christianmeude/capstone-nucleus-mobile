@@ -63,6 +63,11 @@ class ResearchRepository {
     await SupabaseService.trackDownload(paperId);
   }
 
+  /// Track a paper view
+  static Future<void> trackView(String paperId) async {
+    await SupabaseService.trackView(paperId);
+  }
+
   /// Get research categories
   static Future<List<Map<String, dynamic>>> getCategories() async {
     return await SupabaseService.getCategories();

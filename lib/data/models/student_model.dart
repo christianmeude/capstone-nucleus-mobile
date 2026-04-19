@@ -13,10 +13,18 @@ class StudentModel {
   });
 
   factory StudentModel.fromJson(Map<String, dynamic> json) {
-    final fullName = json['full_name']?.toString().trim() ?? '';
-    final firstName = json['first_name']?.toString().trim() ?? '';
-    final middleName = json['middle_name']?.toString().trim() ?? '';
-    final lastName = json['last_name']?.toString().trim() ?? '';
+    final fullName = json['full_name']?.toString().trim() ??
+      json['fullName']?.toString().trim() ??
+      '';
+    final firstName = json['first_name']?.toString().trim() ??
+      json['firstName']?.toString().trim() ??
+      '';
+    final middleName = json['middle_name']?.toString().trim() ??
+      json['middleName']?.toString().trim() ??
+      '';
+    final lastName = json['last_name']?.toString().trim() ??
+      json['lastName']?.toString().trim() ??
+      '';
     final resolvedName = fullName.isNotEmpty
         ? fullName
         : [

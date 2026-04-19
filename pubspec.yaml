@@ -30,10 +30,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
-  # Supabase - Backend as a Service
-  supabase_flutter: ^2.3.0
-  
+
+  # Backend API client
+
   # State Management
   flutter_riverpod: ^2.4.9
   

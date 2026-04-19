@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/constants/app_constants.dart';
 import '../services/supabase_service.dart';
 import '../models/user_model.dart';
 import '../../core/constants/storage_keys.dart';
@@ -8,16 +9,16 @@ import '../../core/exceptions/app_exceptions.dart';
 class AuthRepository {
   /// Login with email and password
   static Future<UserModel> login(String email, String password) async {
-    try {
-      final result = await SupabaseService.login(email, password);
-      final userData = result['user'] as Map<String, dynamic>;
-      return UserModel.fromJson(userData);
-    } catch (e) {
-      if (e.toString().contains('Invalid')) {
-        throw InvalidCredentialsException();
-      }
-      rethrow;
+    final result = await SupabaseService.login(email, password);
+    final userData = Map<String, dynamic>.from(result['user'] as Map);
+    final user = UserModel.fromJson(userData);
+
+    if (user.role != AppConstants.roleStudent) {
+      await SupabaseService.logout();
+      throw ValidationException('Only student accounts are supported in this app.');
     }
+
+    return user;
   }
 
   /// Register a new user
@@ -25,23 +26,32 @@ class AuthRepository {
     required String fullName,
     required String email,
     required String password,
+    String role = AppConstants.roleStudent,
+    String? department,
+    String? departmentId,
     String? program,
+    String? programId,
   }) async {
-    try {
-      final result = await SupabaseService.register(
-        email: email,
-        password: password,
-        fullName: fullName,
-        program: program,
-      );
-      final userData = result['user'] as Map<String, dynamic>;
-      return UserModel.fromJson(userData);
-    } catch (e) {
-      if (e.toString().contains('already exists')) {
-        throw UserAlreadyExistsException();
-      }
-      rethrow;
+    final result = await SupabaseService.register(
+      email: email,
+      password: password,
+      fullName: fullName,
+      role: role,
+      department: department,
+      departmentId: departmentId,
+      program: program,
+      programId: programId,
+    );
+
+    final userData = Map<String, dynamic>.from(result['user'] as Map);
+    final user = UserModel.fromJson(userData);
+
+    if (user.role != AppConstants.roleStudent) {
+      await SupabaseService.logout();
+      throw ValidationException('Only student accounts are supported in this app.');
     }
+
+    return user;
   }
 
   /// Logout the current user
@@ -57,8 +67,9 @@ class AuthRepository {
   /// Check if user is logged in
   static Future<bool> isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getString(StorageKeys.userId);
-    return userId != null;
+    return (prefs.getString(StorageKeys.accessToken) ?? '').isNotEmpty ||
+        (prefs.getString(StorageKeys.refreshToken) ?? '').isNotEmpty ||
+        (prefs.getString(StorageKeys.userId) ?? '').isNotEmpty;
   }
 
   /// Get current user's role

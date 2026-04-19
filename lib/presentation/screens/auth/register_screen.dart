@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/utils/validators.dart';
+import '../../../data/models/department_model.dart';
+import '../../../data/models/program_model.dart';
 import '../../../data/repositories/auth_repository.dart';
+import '../../../data/repositories/research_repository.dart';
 import '../../../routes/app_routes.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -25,8 +29,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _confirmFocus = FocusNode();
 
   bool _isLoading = false;
+  bool _isLoadingLookups = true;
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
+  List<DepartmentModel> _departments = [];
+  List<ProgramModel> _programs = [];
+  DepartmentModel? _selectedDepartment;
+  ProgramModel? _selectedProgram;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDepartments();
+  }
 
   @override
   void dispose() {
@@ -44,12 +59,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
+    if (_selectedDepartment == null) {
+      _showErrorSnackbar('Please select your department.');
+      return;
+    }
+
+    if (_selectedProgram == null) {
+      _showErrorSnackbar('Please select your program.');
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       await AuthRepository.register(
         fullName: _nameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
+        role: AppConstants.roleStudent,
+        department: _selectedDepartment?.name,
+        departmentId: _selectedDepartment?.id,
+        program: _selectedProgram?.name,
+        programId: _selectedProgram?.id,
       );
 
       if (!mounted) return;
@@ -64,6 +94,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _loadDepartments() async {
+    try {
+      final list = await ResearchRepository.getDepartments();
+      if (!mounted) return;
+
+      setState(() {
+        _departments = list.map(DepartmentModel.fromJson).toList();
+        _isLoadingLookups = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _departments = [];
+        _programs = [];
+        _selectedDepartment = null;
+        _selectedProgram = null;
+        _isLoadingLookups = false;
+      });
+      _showErrorSnackbar('Failed to load departments and programs.');
+    }
+  }
+
+  Future<void> _handleDepartmentChanged(DepartmentModel? department) async {
+    setState(() {
+      _selectedDepartment = department;
+      _selectedProgram = null;
+      _programs = department?.programs ?? [];
+    });
   }
 
   void _showErrorSnackbar(String message) {
@@ -252,6 +312,71 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  Widget _buildDropdownField<T>({
+    required String label,
+    required String hint,
+    required IconData icon,
+    required T? value,
+    required List<DropdownMenuItem<T>> items,
+    required ValueChanged<T?> onChanged,
+    required String? Function(T?) validator,
+    bool enabled = true,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.labelMedium.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<T>(
+          value: value,
+          items: items,
+          onChanged: enabled ? onChanged : null,
+          validator: validator,
+          style: AppTextStyles.bodyMedium,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textLight,
+            ),
+            prefixIcon: Icon(icon, color: AppColors.textSecondary, size: 20),
+            filled: true,
+            fillColor: AppColors.background,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.border, width: 1),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.primary, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.error, width: 1),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.error, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildFormFields() {
     return Column(
       children: [
@@ -280,6 +405,54 @@ class _RegisterScreenState extends State<RegisterScreen> {
           validator: Validators.validateEmail,
           textInputAction: TextInputAction.next,
           onSubmitted: () => _passwordFocus.requestFocus(),
+        ),
+
+        const SizedBox(height: 18),
+
+        // Department
+        _buildDropdownField<DepartmentModel>(
+          label: 'Department',
+          hint: _isLoadingLookups ? 'Loading departments...' : 'Select your department',
+          icon: Icons.apartment_rounded,
+          value: _selectedDepartment,
+          items: _departments
+              .map(
+                (department) => DropdownMenuItem<DepartmentModel>(
+                  value: department,
+                  child: Text(department.displayName),
+                ),
+              )
+              .toList(),
+          onChanged: _handleDepartmentChanged,
+          validator: (value) => _isLoadingLookups || _departments.isEmpty
+              ? null
+              : (value == null ? 'Department is required' : null),
+          enabled: !_isLoadingLookups && _departments.isNotEmpty,
+        ),
+
+        const SizedBox(height: 18),
+
+        // Program
+        _buildDropdownField<ProgramModel>(
+          label: 'Program',
+          hint: _selectedDepartment == null
+              ? 'Select a department first'
+              : (_isLoadingLookups ? 'Loading programs...' : 'Select your program'),
+          icon: Icons.school_rounded,
+          value: _selectedProgram,
+          items: _programs
+              .map(
+                (program) => DropdownMenuItem<ProgramModel>(
+                  value: program,
+                  child: Text(program.displayName),
+                ),
+              )
+              .toList(),
+          onChanged: (program) => setState(() => _selectedProgram = program),
+          validator: (value) => _isLoadingLookups || _selectedDepartment == null || _programs.isEmpty
+              ? null
+              : (value == null ? 'Program is required' : null),
+          enabled: !_isLoadingLookups && _selectedDepartment != null && _programs.isNotEmpty,
         ),
 
         const SizedBox(height: 18),
